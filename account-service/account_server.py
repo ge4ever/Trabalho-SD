@@ -1,4 +1,9 @@
 from concurrent import futures
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "grpc-generated"))
+
 import grpc
 import pix_pb2
 import pix_pb2_grpc
