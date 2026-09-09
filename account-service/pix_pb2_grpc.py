@@ -26,8 +26,7 @@ if _version_not_supported:
 
 
 class PixServiceStub:
-    """Serviço principal.
-    É o serviço que recebe as requisições do cliente.
+    """recebe as requisições do cliente e aplica as regras de negócio.
     """
 
     def __init__(self, channel):
@@ -41,14 +40,24 @@ class PixServiceStub:
                 request_serializer=pix__pb2.SaldoRequest.SerializeToString,
                 response_deserializer=pix__pb2.SaldoResponse.FromString,
                 _registered_method=True)
+        self.VerificarPix = channel.unary_unary(
+                '/pix.PixService/VerificarPix',
+                request_serializer=pix__pb2.PixRequest.SerializeToString,
+                response_deserializer=pix__pb2.PixResponse.FromString,
+                _registered_method=True)
 
 
 class PixServiceServicer:
-    """Serviço principal.
-    É o serviço que recebe as requisições do cliente.
+    """recebe as requisições do cliente e aplica as regras de negócio.
     """
 
     def ConsultarSaldo(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def VerificarPix(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -62,6 +71,11 @@ def add_PixServiceServicer_to_server(servicer, server):
                     request_deserializer=pix__pb2.SaldoRequest.FromString,
                     response_serializer=pix__pb2.SaldoResponse.SerializeToString,
             ),
+            'VerificarPix': grpc.unary_unary_rpc_method_handler(
+                    servicer.VerificarPix,
+                    request_deserializer=pix__pb2.PixRequest.FromString,
+                    response_serializer=pix__pb2.PixResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'pix.PixService', rpc_method_handlers)
@@ -71,8 +85,7 @@ def add_PixServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class PixService:
-    """Serviço principal.
-    É o serviço que recebe as requisições do cliente.
+    """recebe as requisições do cliente e aplica as regras de negócio.
     """
 
     @staticmethod
@@ -102,10 +115,36 @@ class PixService:
             metadata,
             _registered_method=True)
 
+    @staticmethod
+    def VerificarPix(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/pix.PixService/VerificarPix',
+            pix__pb2.PixRequest.SerializeToString,
+            pix__pb2.PixResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
 
 class AccountServiceStub:
-    """Microserviço responsável pelas contas.
-    É chamado internamente pelo servidor principal.
+    """microserviço responsável pelas contas.
     """
 
     def __init__(self, channel):
@@ -122,8 +161,7 @@ class AccountServiceStub:
 
 
 class AccountServiceServicer:
-    """Microserviço responsável pelas contas.
-    É chamado internamente pelo servidor principal.
+    """microserviço responsável pelas contas.
     """
 
     def ConsultarConta(self, request, context):
@@ -149,8 +187,7 @@ def add_AccountServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class AccountService:
-    """Microserviço responsável pelas contas.
-    É chamado internamente pelo servidor principal.
+    """microserviço responsável pelas contas.
     """
 
     @staticmethod

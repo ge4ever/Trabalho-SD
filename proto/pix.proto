@@ -3,15 +3,14 @@ syntax = "proto3";
 package pix;
 
 
-// Serviço principal.
-// É o serviço que recebe as requisições do cliente.
+// recebe as requisições do cliente e aplica as regras de negócio.
 service PixService {
   rpc ConsultarSaldo (SaldoRequest) returns (SaldoResponse);
+  rpc VerificarPix (PixRequest) returns (PixResponse);
 }
 
 
-// Microserviço responsável pelas contas.
-// É chamado internamente pelo servidor principal.
+// microserviço responsável pelas contas.
 service AccountService {
   rpc ConsultarConta (SaldoRequest) returns (SaldoResponse);
 }
@@ -27,4 +26,21 @@ message SaldoResponse {
   string titular = 2;
   double saldo = 3;
   string mensagem = 4;
+}
+
+
+// requisição para verificar se um Pix pode ser realizado.
+message PixRequest {
+  string chave_pix = 1;
+  double valor = 2;
+}
+
+
+// resposta da verificação do Pix.
+message PixResponse {
+  bool sucesso = 1;
+  string titular = 2;
+  double saldo = 3;
+  double valor = 4;
+  string mensagem = 5;
 }

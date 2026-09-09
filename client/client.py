@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Garante que os stubs gerados no diretorio local possam ser importados
 sys.path.insert(0, os.path.dirname(__file__))
 
 import grpc
@@ -14,22 +13,26 @@ def run():
     endereco = f"{server_host}:50051"
 
     chave = sys.argv[1] if len(sys.argv) > 1 else "alice@pix.local"
+    valor = float(sys.argv[2]) if len(sys.argv) > 2 else 100.0
 
     print(f"[*] Conectando ao Servidor gRPC em {endereco}...")
+    print(f"[*] Verificando Pix para '{chave}' no valor de R$ {valor:.2f}")
+
     with grpc.insecure_channel(endereco) as channel:
         stub = pix_pb2_grpc.PixServiceStub(channel)
 
-        print(f"[*] Solicitando consulta para chave: '{chave}'")
-        request = pix_pb2.SaldoRequest(chave_pix=chave)
-        response = stub.ConsultarSaldo(request)
+        request = pix_pb2.PixRequest(
+            chave_pix=chave,
+            valor=valor
+        )
 
-        print("\n--- Resposta gRPC Recebida ---")
-        if response.sucesso:
-            print(f"Titular : {response.titular}")
-            print(f"Saldo   : R$ {response.saldo:.2f}")
-            print(f"Mensagem: {response.mensagem}")
-        else:
-            print(f"Erro    : {response.mensagem}")
+        response = stub.VerificarPix(request)
+
+    print("\n--- Resultado da Verificação Pix ---")
+    print(f"Titular : {response.titular}")
+    print(f"Saldo   : R$ {response.saldo:.2f}")
+    print(f"Valor   : R$ {response.valor:.2f}")
+    print(f"Resultado: {response.mensagem}")
 
 
 if __name__ == "__main__":
