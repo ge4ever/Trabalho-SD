@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package pix;
+
+// Serviço gRPC do Core Bancário
+service PixService {
+  rpc ConsultarSaldo (SaldoRequest) returns (SaldoResponse);
+}
+
+// Mensagem enviada pelo Cliente
+message SaldoRequest {
+  string chave_pix = 1;
+}
+
+// Mensagem retornada pelo Servidor
+message SaldoResponse {
+  bool sucesso = 1;
+  string titular = 2;
+  double saldo = 3;
+  string mensagem = 4;
+}
