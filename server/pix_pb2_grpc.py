@@ -26,7 +26,8 @@ if _version_not_supported:
 
 
 class PixServiceStub:
-    """Serviço gRPC do Core Bancário
+    """Serviço principal.
+    É o serviço que recebe as requisições do cliente.
     """
 
     def __init__(self, channel):
@@ -43,7 +44,8 @@ class PixServiceStub:
 
 
 class PixServiceServicer:
-    """Serviço gRPC do Core Bancário
+    """Serviço principal.
+    É o serviço que recebe as requisições do cliente.
     """
 
     def ConsultarSaldo(self, request, context):
@@ -69,7 +71,8 @@ def add_PixServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class PixService:
-    """Serviço gRPC do Core Bancário
+    """Serviço principal.
+    É o serviço que recebe as requisições do cliente.
     """
 
     @staticmethod
@@ -87,6 +90,84 @@ class PixService:
             request,
             target,
             '/pix.PixService/ConsultarSaldo',
+            pix__pb2.SaldoRequest.SerializeToString,
+            pix__pb2.SaldoResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+
+class AccountServiceStub:
+    """Microserviço responsável pelas contas.
+    É chamado internamente pelo servidor principal.
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.ConsultarConta = channel.unary_unary(
+                '/pix.AccountService/ConsultarConta',
+                request_serializer=pix__pb2.SaldoRequest.SerializeToString,
+                response_deserializer=pix__pb2.SaldoResponse.FromString,
+                _registered_method=True)
+
+
+class AccountServiceServicer:
+    """Microserviço responsável pelas contas.
+    É chamado internamente pelo servidor principal.
+    """
+
+    def ConsultarConta(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_AccountServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'ConsultarConta': grpc.unary_unary_rpc_method_handler(
+                    servicer.ConsultarConta,
+                    request_deserializer=pix__pb2.SaldoRequest.FromString,
+                    response_serializer=pix__pb2.SaldoResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'pix.AccountService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('pix.AccountService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class AccountService:
+    """Microserviço responsável pelas contas.
+    É chamado internamente pelo servidor principal.
+    """
+
+    @staticmethod
+    def ConsultarConta(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/pix.AccountService/ConsultarConta',
             pix__pb2.SaldoRequest.SerializeToString,
             pix__pb2.SaldoResponse.FromString,
             options,

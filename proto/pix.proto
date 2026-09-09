@@ -2,17 +2,26 @@ syntax = "proto3";
 
 package pix;
 
-// Serviço gRPC do Core Bancário
+
+// Serviço principal.
+// É o serviço que recebe as requisições do cliente.
 service PixService {
   rpc ConsultarSaldo (SaldoRequest) returns (SaldoResponse);
 }
 
-// Mensagem enviada pelo Cliente
+
+// Microserviço responsável pelas contas.
+// É chamado internamente pelo servidor principal.
+service AccountService {
+  rpc ConsultarConta (SaldoRequest) returns (SaldoResponse);
+}
+
+
 message SaldoRequest {
   string chave_pix = 1;
 }
 
-// Mensagem retornada pelo Servidor
+
 message SaldoResponse {
   bool sucesso = 1;
   string titular = 2;

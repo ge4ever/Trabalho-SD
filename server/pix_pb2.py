@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tpix.proto\x12\x03pix\"!\n\x0cSaldoRequest\x12\x11\n\tchave_pix\x18\x01 \x01(\t\"R\n\rSaldoResponse\x12\x0f\n\x07sucesso\x18\x01 \x01(\x08\x12\x0f\n\x07titular\x18\x02 \x01(\t\x12\r\n\x05saldo\x18\x03 \x01(\x01\x12\x10\n\x08mensagem\x18\x04 \x01(\t2E\n\nPixService\x12\x37\n\x0e\x43onsultarSaldo\x12\x11.pix.SaldoRequest\x1a\x12.pix.SaldoResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tpix.proto\x12\x03pix\"!\n\x0cSaldoRequest\x12\x11\n\tchave_pix\x18\x01 \x01(\t\"R\n\rSaldoResponse\x12\x0f\n\x07sucesso\x18\x01 \x01(\x08\x12\x0f\n\x07titular\x18\x02 \x01(\t\x12\r\n\x05saldo\x18\x03 \x01(\x01\x12\x10\n\x08mensagem\x18\x04 \x01(\t2E\n\nPixService\x12\x37\n\x0e\x43onsultarSaldo\x12\x11.pix.SaldoRequest\x1a\x12.pix.SaldoResponse2I\n\x0e\x41\x63\x63ountService\x12\x37\n\x0e\x43onsultarConta\x12\x11.pix.SaldoRequest\x1a\x12.pix.SaldoResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -37,4 +37,6 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SALDORESPONSE']._serialized_end=135
   _globals['_PIXSERVICE']._serialized_start=137
   _globals['_PIXSERVICE']._serialized_end=206
+  _globals['_ACCOUNTSERVICE']._serialized_start=208
+  _globals['_ACCOUNTSERVICE']._serialized_end=281
 # @@protoc_insertion_point(module_scope)
