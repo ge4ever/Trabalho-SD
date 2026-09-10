@@ -91,7 +91,7 @@ python account-service/account_server.py
 
 ### SSH 2 da VM para o PixService
 
-Abra um outro terminal SSH na mesma VM (é importante que seja a mesma para que não haja problema com portas)
+Abra um outro terminal SSH na mesma VM (é importante que seja a mesma para que não haja problema com portas, mas se você quiser abrir em duas diferentes basta configurar a porta dessa segunda).
 
 ```bash
 cd ~/Trabalho-SD
@@ -180,3 +180,7 @@ Titular : Saldo : R$ 0.00
 Valor : R$ 100.00
 Resultado: Pix não autorizado: chave Pix não encontrada.
 ```
+
+
+## Observação
+Pode acontecer de haver problemas com timeout, isso normalmente ocorre quando o cliente não consegue alcançar a porta do servidor, principalmente em redes Wi-Fi públicas que possuem configurações de portas específicas, se for caso, basta mudar para uma rede diferente, como uma conexão roteada pelo seu dispositivo móvel.
