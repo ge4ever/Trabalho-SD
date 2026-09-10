@@ -91,7 +91,7 @@ python account-service/account_server.py
 
 ### SSH 2 da VM para o PixService
 
-Abra um outro terminal SSH na mesma VM (é importante que seja a mesma para que não haja problema com portas, mas se você quiser abrir em duas diferentes basta configurar a porta dessa segunda).
+Abra um outro terminal SSH na mesma VM (é importante que seja a mesma para que não haja problema com portas, mas se você quiser abrir em duas diferentes basta configurar a porta dessa segunda e clonar e recompilar o projeto).
 
 ```bash
 cd ~/Trabalho-SD
