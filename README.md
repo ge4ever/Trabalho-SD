@@ -132,7 +132,7 @@ SERVER_HOST=IP_EXTERNO_DA_VM python client/client.py
 ```
 Repare que este último comando contém `IP_EXTERNO_DA_VM`, nessa parte é necessário que você a substitua pelo IP externo que aparece na instância de sua VM.
 
-A seguir separamos umas sugestões de consulra que abrangem bem o escopo do projeto:
+A seguir separamos umas sugestões de consulta que abrangem bem o escopo do projeto:
 
 Verificação de um pix
 ```bash
