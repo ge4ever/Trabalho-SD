@@ -1,5 +1,13 @@
 # Trabalho 1 - Sistema de contas e verificação de transações bancárias (estilo pix)
 
+#### Participantes
+Grupo:
+Geovana Ribeiro Araújo Espinosa - 202405104
+
+Dennis Lucas Gonçalves - 202400839
+
+Vitor Vittorete Serafim de Pina - 202405128
+
 ## Descrição do projeto
 O projeto consiste em uma versão inicial e bem simplificada de transações bancárias inspiradas no Pix, utilizando o gRPC. O
 sistema funciona em cima de dois microserviços básicos, o `PixService` que recebe uma requisição do cliente e é responsável
