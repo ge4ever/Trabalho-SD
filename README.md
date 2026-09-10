@@ -1,7 +1,6 @@
 # Trabalho 1 - Sistema de contas e verificação de transações bancárias (estilo pix)
 
 #### Participantes
-Grupo:
 Geovana Ribeiro Araújo Espinosa - 202405104
 
 Dennis Lucas Gonçalves - 202400839
@@ -124,7 +123,7 @@ Gere os arquivos
 python -m grpc_tools.protoc -I proto --python_out=grpc-generated --grpc_python_out=grpc-generated proto/pix.proto
 ```
 
-Execute a consulta
+Execute a consulta (essa consulta é apenas uma base geral, abaixo temos comandos funcionais)
 
 
 ```bash
@@ -134,17 +133,50 @@ Repare que este último comando contém `IP_EXTERNO_DA_VM`, nessa parte é neces
 
 A seguir separamos umas sugestões de consulta que abrangem bem o escopo do projeto:
 
-Verificação de um pix
+**Verificação de um pix**
 ```bash
 SERVER_HOST=IP_EXTERNO_DA_VM python client/client.py alice@pix.local 100
 ```
 
-Saldo insuficiente
+_Saída esperada_
+```bash
+[*] Conectando ao Servidor gRPC em IP_EXTERNO_DA_VM:50051...
+[*] Verificando Pix para 'alice@pix.local' no valor de R$ 100.00
+
+--- Resultado da Verificação Pix ---
+Titular : Alice Silva Saldo : R$ 1250.75
+Valor : R$ 100.00
+Resultado: Pix autorizado.
+```
+
+**Saldo insuficiente**
 ```bash
 SERVER_HOST=IP_EXTERNO_DA_VM python client/client.py alice@pix.local 1500
 ```
 
-Conta não encontrada
+_Saída esperada_
+```bash
+[*] Conectando ao Servidor gRPC em IP_EXTERNO_DA_VM:50051...
+[*] Verificando Pix para 'alice@pix.local' no valor de R$ 1500.00
+
+--- Resultado da Verificação Pix ---
+Titular : Alice Silva Saldo : R$ 1250.75
+Valor : R$ 1500.00
+Resultado: Pix não autorizado: saldo insuficiente.
+```
+
+***Conta não encontrada***
 ```bash
 SERVER_HOST=IP_EXTERNO_DA_VM python client/client.py qualquer@pix.local 100
+```
+
+_Saída esperada_
+```bash
+[*] Conectando ao Servidor gRPC em IP_EXTERNO_DA_VM:50051...
+[*] Verificando Pix para 'qualquer@pix.local' no valor de R$ 100.00
+
+--- Resultado da Verificação Pix ---
+Titular : Saldo : R$ 0.00
+Valor : R$ 100.00
+Resultado: Pix não autorizado: chave Pix não encontrada.
 ```
