@@ -6,6 +6,9 @@ sistema funciona em cima de dois microserviços básicos, o `PixService` que rec
 por consultar o `AccountService`, que fornece os dados da conta, a partir desse retorno o `PixService` avalia o saldo da conta e
 verifica se a transação pode ser realizada. O cliente então recebe uma mensagem com as informações relacionadas a sua requisição.
 
+<img width="450" height="296" alt="WhatsApp Image 2026-09-09 at 22 25 08" src="https://github.com/user-attachments/assets/844b0268-7dd0-409e-8da9-0295884e574a" />
+
+
 ## Arquitetura do projeto
 
 ```text
@@ -121,4 +124,19 @@ SERVER_HOST=IP_EXTERNO_DA_VM python client/client.py
 ```
 Repare que este último comando contém `IP_EXTERNO_DA_VM`, nessa parte é necessário que você a substitua pelo IP externo que aparece na instância de sua VM.
 
+A seguir separamos umas sugestões de consulra que abrangem bem o escopo do projeto:
 
+Verificação de um pix
+```bash
+SERVER_HOST=IP_EXTERNO_DA_VM python client/client.py alice@pix.local 100
+```
+
+Saldo insuficiente
+```bash
+SERVER_HOST=IP_EXTERNO_DA_VM python client/client.py alice@pix.local 1500
+```
+
+Conta não encontrada
+```bash
+SERVER_HOST=IP_EXTERNO_DA_VM python client/client.py qualquer@pix.local 100
+```
