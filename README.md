@@ -59,7 +59,7 @@ O AccountService é acessado pelo PixService através de localhost:50052.
 ## Como compilar o projeto
 
 Esse trabalho pode rodar 100% localmente se você preferir, nesse caso basta seguir as instruções abaixo em terminais da sua
-própria máquina, basta colocar as requisições do cliente sem informar o SERVER_HOST, apenas como local mesmo. 
+própria máquina, basta colocar as requisições do cliente como SERVER_HOST. 
 
 É muito importante que a porta 50051 esteja configurada e liberada na VM.
 
