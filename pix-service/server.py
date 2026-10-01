@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 import grpc
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "grpc-generated"))
@@ -8,9 +8,27 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "grpc-generated
 import pix_pb2
 import pix_pb2_grpc
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder="templates",
+    static_folder="static",
+    static_url_path="/static"
+)
 
 ACCOUNT_SERVICE_HOST = os.getenv("ACCOUNT_SERVICE_HOST", "localhost:50052")
+
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    return response
+
+
+@app.route("/", methods=["GET"])
+def index():
+    return render_template("index.html")
 
 
 @app.route("/pix/saldo/<chave_pix>", methods=["GET"])

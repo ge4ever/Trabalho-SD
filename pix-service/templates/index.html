@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Banco SD - Pix</title>
+  <meta name="description" content="Interface bancária mobile-first para simulação e verificação de Pix." />
+
+  <!-- Google Fonts: Source Sans 3 e JetBrains Mono (Mesmas de vitorette.com) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Sans+3:wght@400;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    
+    <!-- Top Header do Aplicativo -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-badge" title="Banco SD Pix">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L2 12l10 10 10-10L12 2zm0 4.5l5.5 5.5-5.5 5.5-5.5-5.5L12 6.5z"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <span class="brand-title">Banco SD</span>
+          <span class="brand-subtitle">Módulo Pix</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Alternar Tema Claro / Escuro -->
+        <button id="theme-toggle-btn" class="icon-btn" title="Alternar tema claro/escuro" aria-label="Alternar tema">
+          <svg id="theme-icon-moon" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <svg id="theme-icon-sun" viewBox="0 0 24 24" style="display: none;">
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Barra de Perfil e Seleção de Conta -->
+    <section class="account-selector-bar">
+      <div class="user-profile">
+        <div class="avatar-circle" id="user-avatar">A</div>
+        <div class="user-names">
+          <span class="user-greeting">Conta ativa</span>
+          <span class="user-current-name" id="user-current-name">Alice Silva</span>
+        </div>
+      </div>
+
+      <select id="account-select" class="account-select" title="Trocar conta de teste">
+        <option value="alice@pix.local">Alice Silva</option>
+        <option value="bob@pix.local">Bob Santos</option>
+      </select>
+    </section>
+
+    <!-- Conteúdo Principal -->
+    <main class="app-main">
+
+      <!-- Card de Saldo Bancário -->
+      <section class="balance-card">
+        <div class="balance-top-row">
+          <span class="balance-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="4" width="20" height="16" rx="2"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+            Saldo disponível
+          </span>
+
+          <div class="balance-toggles">
+            <!-- Botão de Ocultar/Mostrar Saldo -->
+            <button id="toggle-visibility-btn" class="mini-btn" title="Ocultar ou exibir saldo" aria-label="Ocultar saldo">
+              <svg id="eye-open-icon" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg id="eye-closed-icon" viewBox="0 0 24 24" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+
+            <!-- Botão de Atualizar Saldo -->
+            <button id="refresh-balance-btn" class="mini-btn" title="Atualizar saldo agora" aria-label="Atualizar saldo">
+              <svg viewBox="0 0 24 24">
+                <path d="M23 4v6h-6M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Valor do Saldo -->
+        <div class="balance-amount" id="balance-display">
+          R$ 0,00
+        </div>
+
+        <div class="balance-footer">
+          <span>Chave cadastrada:</span>
+          <span class="pix-key-pill" id="active-key-display">alice@pix.local</span>
+        </div>
+      </section>
+
+      <!-- Ações Rápidas -->
+      <section class="quick-actions">
+        <button class="action-pill active" id="action-pix">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <span>Transferir Pix</span>
+        </button>
+
+        <button class="action-pill" id="action-refresh">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+          </div>
+          <span>Atualizar</span>
+        </button>
+      </section>
+
+      <!-- Formulário de Envio Pix -->
+      <section class="pix-form-card">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </div>
+          <h2 class="section-title">Transferência Pix</h2>
+        </div>
+
+        <form id="pix-form">
+          <!-- Chave Pix Destino -->
+          <div class="form-group">
+            <label class="form-label" for="pix-destinatario">Chave Pix de Destino</label>
+            <div class="input-wrapper">
+              <div class="input-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <input
+                type="text"
+                id="pix-destinatario"
+                class="form-input font-mono"
+                placeholder="ex: bob@pix.local"
+                value="bob@pix.local"
+                required
+              />
+            </div>
+            <!-- Chaves sugeridas -->
+            <div class="chips-row">
+              <button type="button" class="chip chip-recipient" data-key="bob@pix.local">bob@pix.local</button>
+              <button type="button" class="chip chip-recipient" data-key="alice@pix.local">alice@pix.local</button>
+              <button type="button" class="chip chip-recipient" data-key="desconhecido@pix.local">desconhecido@pix.local</button>
+            </div>
+          </div>
+
+          <!-- Valor do Pix -->
+          <div class="form-group">
+            <label class="form-label" for="pix-valor">Valor da Transferência</label>
+            <div class="input-wrapper">
+              <span class="input-currency-prefix">R$</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                id="pix-valor"
+                class="form-input currency-input"
+                placeholder="0,00"
+                value="100.00"
+                required
+              />
+            </div>
+            <!-- Valores Rápidos -->
+            <div class="chips-row">
+              <button type="button" class="chip chip-amount" data-amount="10">+ R$ 10</button>
+              <button type="button" class="chip chip-amount" data-amount="50">+ R$ 50</button>
+              <button type="button" class="chip chip-amount" data-amount="100">+ R$ 100</button>
+              <button type="button" class="chip chip-amount" data-amount="500">+ R$ 500</button>
+            </div>
+          </div>
+
+          <!-- Botão de Enviar -->
+          <button type="submit" id="btn-submit-pix" class="btn-primary">
+            <span class="btn-spinner"></span>
+            <span class="btn-text">Confirmar Transferência</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- Histórico de Transações Recentes -->
+      <section class="history-card">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <h2 class="section-title">Atividades Recentes</h2>
+        </div>
+
+        <div id="history-list" class="history-list">
+          <div class="history-empty">Nenhuma transação realizada nesta sessão.</div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer Mobile -->
+    <footer class="app-footer">
+      <span>Trabalho SD • UFG • Inspirado no design de <a href="https://vitorette.com/" target="_blank" rel="noopener">vitorette.com</a></span>
+    </footer>
+
+    <!-- Modal de Comprovante de Transferência -->
+    <div id="receipt-modal" class="modal-backdrop">
+      <div class="receipt-sheet">
+        <div class="receipt-header">
+          <div id="receipt-icon-circle" class="receipt-icon-circle success">
+            <svg viewBox="0 0 24 24">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </div>
+          <h3 id="receipt-status-title" class="receipt-status-title">Pix Autorizado!</h3>
+          <p id="receipt-status-msg" class="receipt-status-msg">Transação verificada com sucesso.</p>
+        </div>
+
+        <div class="receipt-box">
+          <div class="receipt-row">
+            <span class="receipt-label">Valor:</span>
+            <span id="receipt-valor" class="receipt-val mono highlight">R$ 0,00</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Destinatário:</span>
+            <span id="receipt-destinatario" class="receipt-val mono">-</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Conta de Origem:</span>
+            <span id="receipt-origem" class="receipt-val">-</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Saldo em Conta:</span>
+            <span id="receipt-saldo" class="receipt-val mono">R$ 0,00</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Data e Hora:</span>
+            <span id="receipt-data" class="receipt-val">-</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Resposta:</span>
+            <span id="receipt-mensagem" class="receipt-val">-</span>
+          </div>
+        </div>
+
+        <button type="button" id="btn-close-receipt" class="btn-secondary">
+          Fechar Comprovante
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

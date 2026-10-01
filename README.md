@@ -105,7 +105,22 @@ Inicie o serviço
 python pix-service/server.py
 ```
 
-### Cliente local
+### Interface Web (Mobile First - Estilo App Bancário)
+
+Com o `pix-service` em execução, acesse a interface gráfica diretamente pelo navegador (desktop ou smartphone):
+
+- **Localmente:** `http://localhost:50051/`
+- **Pela VM:** `http://IP_EXTERNO_DA_VM:50051/`
+
+Recursos da interface web:
+- **Design Mobile First:** Visual inspirado em apps bancários (Nubank/Inter) com identidade e cores baseadas no [vitorette.com](https://vitorette.com/) (paleta bege quente, acento terracota e suporte a tema claro e escuro).
+- **Consulta de Saldo:** Exibição do saldo com botão de ocultar/mostrar (ícone de olho) e atualização instantânea.
+- **Troca de Conta Ativa:** Alternância fácil entre contas de teste (`Alice Silva` e `Bob Santos`).
+- **Envio de Pix:** Formulário de envio com chips de valores rápidos (+ R$ 10, + R$ 50, + R$ 100, + R$ 500) e sugestões de chaves de destino.
+- **Comprovante de Transação:** Modal com feedback imediato da autorização ou motivo da recusa (saldo insuficiente, chave inexistente).
+- **Histórico da Sessão:** Acompanhamento das últimas transferências realizadas.
+
+### Cliente local (CLI)
 
 Abra um terminal localmente em sua máquina, ela também deve ter o python e git instalados.
 
