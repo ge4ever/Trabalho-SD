@@ -223,9 +223,20 @@ def serve():
     porta = int(os.getenv("PIX_SERVICE_PORT", "50053"))
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     pix_pb2_grpc.add_PixServiceServicer_to_server(PixServicer(), server)
-    server.add_insecure_port(f"0.0.0.0:{porta}")
+    bound_port = server.add_insecure_port(f"0.0.0.0:{porta}")
+    if bound_port == 0:
+        raise RuntimeError(
+            f"\n[ERRO CRÍTICO] Falha ao iniciar PixService na porta {porta}!\n"
+            f"A porta {porta} já pode estar sendo utilizada por outro processo ou bloqueada.\n"
+            f"Execute: 'sudo lsof -i :{porta}' ou 'fuser -k {porta}/tcp' para liberar."
+        )
 
-    print(f"[*] [Microsserviço 2] PixService ativo via gRPC na porta {porta}...")
+    print("=" * 65)
+    print(f"[*] [Microsserviço 2] PixService ATIVO via gRPC na porta {bound_port}")
+    print(f"[*] Escutando em: 0.0.0.0:{bound_port} (aceita conexões locais e remotas)")
+    print(f"[*] AccountService configurado em: {ACCOUNT_SERVICE_HOST}")
+    print(f"[*] Driver de Banco: {db.driver.upper()} (Host: {os.getenv('DB_HOST', 'localhost')})")
+    print("=" * 65)
     server.start()
     server.wait_for_termination()
 

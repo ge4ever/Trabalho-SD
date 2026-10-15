@@ -26,8 +26,32 @@ app = Flask(
 # Configurações de ambiente
 JWT_SECRET = os.getenv("JWT_SECRET", "chave-secreta-jwt-banco-sd-2026-super-segura-distribuidos-ufg-2026")
 JWT_ALGORITHM = "HS256"
-ACCOUNT_SERVICE_HOST = os.getenv("ACCOUNT_SERVICE_HOST", "localhost:50052")
-PIX_SERVICE_HOST = os.getenv("PIX_SERVICE_HOST", "localhost:50053")
+
+
+def resolve_service_host(env_var_name, default_port):
+    """
+    Resolve o endereço do serviço gRPC com suporte a:
+    - Variável de ambiente específica (ACCOUNT_SERVICE_HOST ou PIX_SERVICE_HOST)
+    - Variável global BACKEND_HOST (ex: BACKEND_HOST=136.80.4.171)
+    - Fallback padrão inteligente para '136.80.4.171' ou 'localhost'
+    - Limpeza automática de prefixos http:// e adição de porta se ausente.
+    """
+    raw_val = os.getenv(env_var_name, "").strip()
+    if not raw_val:
+        backend_geral = os.getenv("BACKEND_HOST", "").strip()
+        if backend_geral:
+            raw_val = f"{backend_geral}:{default_port}"
+        else:
+            raw_val = f"136.80.4.171:{default_port}"
+
+    raw_val = raw_val.replace("http://", "").replace("https://", "").strip()
+    if ":" not in raw_val:
+        raw_val = f"{raw_val}:{default_port}"
+    return raw_val
+
+
+ACCOUNT_SERVICE_HOST = resolve_service_host("ACCOUNT_SERVICE_HOST", 50052)
+PIX_SERVICE_HOST = resolve_service_host("PIX_SERVICE_HOST", 50053)
 
 
 # ==============================================================================
@@ -109,14 +133,17 @@ def login():
         }), 400
 
     # Tradução de Protocolo: REST/JSON -> gRPC com AccountService
+    print(f"[GATEWAY] [LOGIN] Tentando autenticar '{chave}' via gRPC em {ACCOUNT_SERVICE_HOST}...")
     try:
         with grpc.insecure_channel(ACCOUNT_SERVICE_HOST) as channel:
             account_stub = pix_pb2_grpc.AccountServiceStub(channel)
             auth_resp = account_stub.Autenticar(
-                pix_pb2.AuthRequest(chave_pix=chave, senha=senha)
+                pix_pb2.AuthRequest(chave_pix=chave, senha=senha),
+                timeout=5.0
             )
 
         if not auth_resp.sucesso:
+            print(f"[GATEWAY] [LOGIN] Autenticação recusada para '{chave}': {auth_resp.mensagem}")
             return jsonify({
                 "sucesso": False,
                 "mensagem": auth_resp.mensagem
@@ -135,6 +162,7 @@ def login():
             algorithm=JWT_ALGORITHM
         )
 
+        print(f"[GATEWAY] [LOGIN] Sucesso! JWT emitido para '{chave}' ({auth_resp.titular})")
         return jsonify({
             "sucesso": True,
             "token": token,
@@ -144,10 +172,13 @@ def login():
         }), 200
 
     except grpc.RpcError as e:
-        print(f"[GATEWAY] Erro gRPC ao comunicar com AccountService no login: {e}")
+        detalhes = e.details() if hasattr(e, "details") else str(e)
+        status = e.code() if hasattr(e, "code") else "UNKNOWN"
+        print(f"[GATEWAY ERRO] Falha gRPC ao comunicar com AccountService em '{ACCOUNT_SERVICE_HOST}': status={status}, detalhes={detalhes}")
         return jsonify({
             "sucesso": False,
-            "mensagem": "Erro de comunicação com o serviço de contas (AccountService)."
+            "alvo": ACCOUNT_SERVICE_HOST,
+            "mensagem": f"Erro de comunicação com o serviço de contas em '{ACCOUNT_SERVICE_HOST}'. Verifique se o AccountService está rodando. Detalhes: {detalhes or status}"
         }), 503
 
 
@@ -166,11 +197,13 @@ def consultar_saldo(chave_pix):
             "mensagem": "Chave Pix não fornecida na URL."
         }), 400
 
+    print(f"[GATEWAY] [SALDO] Consultando saldo de '{chave_pix}' via gRPC em {ACCOUNT_SERVICE_HOST}...")
     try:
         with grpc.insecure_channel(ACCOUNT_SERVICE_HOST) as channel:
             account_stub = pix_pb2_grpc.AccountServiceStub(channel)
             saldo_resp = account_stub.ConsultarConta(
-                pix_pb2.SaldoRequest(chave_pix=chave_pix)
+                pix_pb2.SaldoRequest(chave_pix=chave_pix),
+                timeout=5.0
             )
 
         status_code = 200 if saldo_resp.sucesso else 404
@@ -182,10 +215,13 @@ def consultar_saldo(chave_pix):
         }), status_code
 
     except grpc.RpcError as e:
-        print(f"[GATEWAY] Erro gRPC ao consultar saldo: {e}")
+        detalhes = e.details() if hasattr(e, "details") else str(e)
+        status = e.code() if hasattr(e, "code") else "UNKNOWN"
+        print(f"[GATEWAY ERRO] Falha gRPC ao consultar saldo em AccountService ({ACCOUNT_SERVICE_HOST}): {status} - {detalhes}")
         return jsonify({
             "sucesso": False,
-            "mensagem": "Erro de comunicação com o serviço de contas (AccountService)."
+            "alvo": ACCOUNT_SERVICE_HOST,
+            "mensagem": f"Erro ao comunicar com AccountService em '{ACCOUNT_SERVICE_HOST}': {detalhes or status}"
         }), 503
 
 
@@ -236,6 +272,7 @@ def transferir_pix():
         }), 400
 
     # Tradução de protocolo e delegação para o Microsserviço gRPC (PixService)
+    print(f"[GATEWAY] [PIX] Solicitando transferência: '{chave_origem}' -> '{chave_destino}' (R$ {valor:.2f}) para PixService ({PIX_SERVICE_HOST})...")
     try:
         with grpc.insecure_channel(PIX_SERVICE_HOST) as channel:
             pix_stub = pix_pb2_grpc.PixServiceStub(channel)
@@ -245,10 +282,12 @@ def transferir_pix():
                     chave_destino=chave_destino,
                     valor=valor,
                     descricao=descricao
-                )
+                ),
+                timeout=8.0
             )
 
         if resp.sucesso:
+            print(f"[GATEWAY] [PIX] Transferência concluída com sucesso (TxID: {resp.transacao_id})")
             # Retorno semântico 201 Created para nova transferência criada com sucesso
             return jsonify({
                 "sucesso": True,
@@ -261,6 +300,7 @@ def transferir_pix():
                 "data_hora": resp.data_hora
             }), 201
         else:
+            print(f"[GATEWAY] [PIX] Transferência rejeitada pela regra de negócio: {resp.mensagem}")
             # Rejeição de negócio semântica
             return jsonify({
                 "sucesso": False,
@@ -272,10 +312,13 @@ def transferir_pix():
             }), 400
 
     except grpc.RpcError as e:
-        print(f"[GATEWAY] Erro gRPC ao comunicar com PixService: {e}")
+        detalhes = e.details() if hasattr(e, "details") else str(e)
+        status = e.code() if hasattr(e, "code") else "UNKNOWN"
+        print(f"[GATEWAY ERRO] Falha gRPC ao comunicar com PixService em '{PIX_SERVICE_HOST}': {status} - {detalhes}")
         return jsonify({
             "sucesso": False,
-            "mensagem": "Erro de comunicação com o microsserviço de transferências (PixService)."
+            "alvo": PIX_SERVICE_HOST,
+            "mensagem": f"Erro de comunicação com o microsserviço de transferências ({PIX_SERVICE_HOST}): {detalhes or status}"
         }), 503
 
 
@@ -286,11 +329,13 @@ def listar_historico(chave_pix=None):
     """Consulta de histórico real persistido no banco de dados via gRPC PixService."""
     chave = (chave_pix or g.usuario.get("sub", "")).strip()
 
+    print(f"[GATEWAY] [HISTÓRICO] Consultando histórico de '{chave}' via gRPC em {PIX_SERVICE_HOST}...")
     try:
         with grpc.insecure_channel(PIX_SERVICE_HOST) as channel:
             pix_stub = pix_pb2_grpc.PixServiceStub(channel)
             resp = pix_stub.ListarHistorico(
-                pix_pb2.HistoricoRequest(chave_pix=chave)
+                pix_pb2.HistoricoRequest(chave_pix=chave),
+                timeout=5.0
             )
 
         transacoes = []
@@ -315,10 +360,13 @@ def listar_historico(chave_pix=None):
         }), 200
 
     except grpc.RpcError as e:
-        print(f"[GATEWAY] Erro gRPC ao consultar histórico: {e}")
+        detalhes = e.details() if hasattr(e, "details") else str(e)
+        status = e.code() if hasattr(e, "code") else "UNKNOWN"
+        print(f"[GATEWAY ERRO] Falha gRPC ao consultar histórico em PixService ({PIX_SERVICE_HOST}): {status} - {detalhes}")
         return jsonify({
             "sucesso": False,
-            "mensagem": "Erro de comunicação com o serviço de Pix."
+            "alvo": PIX_SERVICE_HOST,
+            "mensagem": f"Erro de comunicação com o serviço de Pix ({PIX_SERVICE_HOST}): {detalhes or status}"
         }), 503
 
 
@@ -350,11 +398,13 @@ def verificar_pix_legado():
             "mensagem": "O campo 'valor' deve ser numérico."
         }), 400
 
+    print(f"[GATEWAY] [VERIFICAR] Verificando Pix de '{chave}' (R$ {valor:.2f}) em {PIX_SERVICE_HOST}...")
     try:
         with grpc.insecure_channel(PIX_SERVICE_HOST) as channel:
             pix_stub = pix_pb2_grpc.PixServiceStub(channel)
             resp = pix_stub.VerificarPix(
-                pix_pb2.PixRequest(chave_pix=chave, valor=valor)
+                pix_pb2.PixRequest(chave_pix=chave, valor=valor),
+                timeout=5.0
             )
 
         return jsonify({
@@ -366,15 +416,24 @@ def verificar_pix_legado():
         }), 200
 
     except grpc.RpcError as e:
+        detalhes = e.details() if hasattr(e, "details") else str(e)
+        status = e.code() if hasattr(e, "code") else "UNKNOWN"
+        print(f"[GATEWAY ERRO] Falha ao verificar Pix em PixService ({PIX_SERVICE_HOST}): {status} - {detalhes}")
         return jsonify({
             "sucesso": False,
-            "mensagem": f"Erro ao comunicar com PixService: {e}"
+            "alvo": PIX_SERVICE_HOST,
+            "mensagem": f"Erro ao comunicar com PixService ({PIX_SERVICE_HOST}): {detalhes or status}"
         }), 503
 
 
 def serve():
     porta = int(os.getenv("PORT", "50051"))
-    print(f"[*] API Gateway REST (Flask) ativo na porta {porta}...")
+    print("=" * 65)
+    print(f"[*] API Gateway REST (Flask) ATIVO na porta {porta}")
+    print(f"[*] -> AccountService alvo : {ACCOUNT_SERVICE_HOST}")
+    print(f"[*] -> PixService alvo     : {PIX_SERVICE_HOST}")
+    print(f"[*] Escutando em: 0.0.0.0:{porta} (Interface Web e REST)")
+    print("=" * 65)
     app.run(host="0.0.0.0", port=porta)
 
 

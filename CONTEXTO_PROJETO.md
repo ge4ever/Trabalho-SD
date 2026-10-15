@@ -154,3 +154,99 @@ Pressione `Ctrl + B` e depois tecla `D` para desanexar o tmux. Mesmo fechando o 
   ```bash
   SERVER_HOST=<IP_EXTERNO_DA_VM> python client/client.py bob@pix.local 50.00
   ```
+
+---
+
+## 5. Arquitetura Distribuída em 2 VMs no GCP (Cenário de Produção Ativo)
+
+Para atender a topologia de nós distribuídos no Google Cloud Platform com duas máquinas virtuais, o sistema foi organizado no modelo **Borda (Edge) vs Backend**:
+
+```text
+       [ Navegador Web / Cliente CLI ]
+                      │
+                      │ HTTP / REST :50051 (IP Público)
+                      ▼
+   ┌──────────────────────────────────────────────┐
+   │  VM 1: vm-server (Gateway / Frontend)        │
+   │  - Flask REST na porta 50051                 │
+   │  - IP Interno: 10.128.0.2                    │
+   │  - Autenticação JWT na borda                 │
+   │  - Validação estrita de JSON (400)           │
+   │  - Tradução REST/JSON <-> gRPC/Protobuf      │
+   └──────────────────────┬───────────────────────┘
+                          │
+         ┌────────────────┴────────────────┐
+         │ gRPC :50052                     │ gRPC :50053
+         ▼                                 ▼
+   ┌──────────────────────────────────────────────┐
+   │  VM 2: Backend (Account & Pix Services)      │
+   │  - IP de Rede: 136.80.4.171                  │
+   │  - AccountService (gRPC :50052)              │
+   │  - PixService (gRPC :50053)                  │
+   └──────────────────────┬───────────────────────┘
+                          │
+                          │ TCP SQL :5432
+                          ▼
+   ┌──────────────────────────────────────────────┐
+   │  Banco de Dados Real (PostgreSQL)            │
+   │  - Host: 35.202.26.114:5432                  │
+   │  - Fallback automático para SQLite em disco  │
+   └──────────────────────────────────────────────┘
+```
+
+### Tabela Consolidada de Portas e Serviços
+
+| Porta | Componente | Protocolo | Host / Nó | Visibilidade GCP |
+|---|---|---|---|---|
+| **50051** | API Gateway (Flask) + Frontend | HTTP/REST | `vm-server` (`10.128.0.2`) | **Pública** (Liberada no Firewall para `0.0.0.0/0`) |
+| **50052** | AccountService | gRPC (HTTP/2) | `136.80.4.171` | **Interna / VPC** |
+| **50053** | PixService | gRPC (HTTP/2) | `136.80.4.171` | **Interna / VPC** |
+| **5432** | PostgreSQL Operacional | TCP / SQL | `35.202.26.114` | **Interna / VPC** |
+
+---
+
+## 6. Histórico de Depuração: Resolução do Erro gRPC 503
+
+### Problema Identificado
+Durante a execução na nuvem, requisições de login no Gateway falhavam com `503 Service Unavailable`:
+```text
+[GATEWAY] Erro gRPC ao comunicar com AccountService no login:
+status = StatusCode.UNAVAILABLE
+details = "failed to connect to all addresses; last error: UNKNOWN: ipv4:136.80.4.171:50052: Failed to connect to remote host: Connection refused"
+```
+
+### Diagnóstico Técnico por Sondagem
+Foi executado um teste de conectividade via socket para as portas em `136.80.4.171`:
+- **Porta 50053 (`PixService`):** Retornou código `0` (conectado com sucesso).
+- **Porta 50052 (`AccountService`):** Retornou código `111` (`Connection refused`).
+
+**Conclusão:** O `PixService` estava em execução, mas o processo do `AccountService` não estava rodando na máquina `136.80.4.171` ou sofreu encerramento prévio.
+
+### Melhorias e Ajustes Implementados no Código
+1. **Configuração Automática de Hosts (`gateway/server.py`):**
+   - Criação da função `resolve_service_host` com fallback inteligente para `136.80.4.171:50052` e `136.80.4.171:50053`.
+   - Sanitização de URLs (remoção de `http://`, `https://` acidentais e inserção da porta padrão se omitida).
+2. **Observabilidade e Logs em Tempo Real (`gateway/server.py`):**
+   - Banner de inicialização exibindo os alvos gRPC configurados.
+   - Logs descritivos a cada chamada: `[GATEWAY] [LOGIN]`, `[GATEWAY] [SALDO]`, `[GATEWAY] [PIX]`, etc.
+   - Detalhamento de erros gRPC com status e mensagem amigável no retorno 503.
+   - Inclusão de timeouts de 5s para evitar bloqueio indefinido de requisições.
+3. **Prevenção de Falha Silenciosa de Vinculação de Porta (`account_server.py` e `pix_server.py`):**
+   - Verificação explícita do retorno de `server.add_insecure_port(...)`. Caso a porta esteja ocupada ou inacessível (`bound_port == 0`), uma exceção com instruções de liberação (`fuser -k <porta>/tcp`) é disparada.
+   - Banners de inicialização com confirmação de binding em `0.0.0.0` e driver de banco ativo.
+4. **Resiliência do Banco de Dados (`database/db.py`):**
+   - Configuração do host padrão para `35.202.26.114`.
+   - Aumento do `connect_timeout` para 5 segundos.
+   - Registro em log do erro de conexão caso o PostgreSQL esteja inacessível antes de acionar o fallback para SQLite.
+
+---
+
+## 7. Conformidade com Requisitos de Tradução e Delegação de Protocolo
+
+A implementação atende com 100% de precisão ao fluxo exigido:
+1. **Recebimento e Desserialização:** O Gateway recebe requisições HTTP REST via Flask e desserializa o corpo JSON com `request.get_json()`.
+2. **Autenticação:** O decorator `@jwt_required` valida tokens `Authorization: Bearer <token>` com HMAC-SHA256 e barra acessos com `401 Unauthorized`.
+3. **Validação:** Valida campos de negócio e devolve semântica `400 Bad Request` com lista de erros antes de acionar o backend.
+4. **Serialização gRPC/Protobuf:** Instancia objetos de contrato binário (`pix_pb2.TransferenciaRequest`, `pix_pb2.AuthRequest`, etc.) e transmite via HTTP/2 binário para os microsserviços.
+5. **Orquestração e Resposta:** O Gateway recebe as mensagens binárias gRPC, traduz de volta para JSON e responde com códigos semânticos (`200 OK`, `201 Created`, `400`, `401`, `503`).
+

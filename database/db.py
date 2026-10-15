@@ -40,11 +40,12 @@ class DatabaseConnection:
                 )
                 conn.close()
                 self.driver = "postgres"
-                print(f"[DATABASE] Conectado ao PostgreSQL ({DB_HOST}:{DB_PORT}/{DB_NAME})")
+                print(f"[DATABASE] Conectado ao PostgreSQL com sucesso ({DB_HOST}:{DB_PORT}/{DB_NAME})")
                 self._init_postgres()
                 return
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[DATABASE AVISO] Não foi possível conectar ao PostgreSQL ({DB_HOST}:{DB_PORT}/{DB_NAME}): {e}")
+                print(f"[DATABASE] Utilizando fallback com SQLite real ({SQLITE_PATH}).")
 
         # Fallback para SQLite real persistente em arquivo
         self.driver = "sqlite"
@@ -135,7 +136,8 @@ class DatabaseConnection:
                 port=DB_PORT,
                 dbname=DB_NAME,
                 user=DB_USER,
-                password=DB_PASSWORD
+                password=DB_PASSWORD,
+                connect_timeout=5
             )
         else:
             conn = sqlite3.connect(SQLITE_PATH)
