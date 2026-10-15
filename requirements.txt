@@ -3,3 +3,6 @@ grpcio-tools
 protobuf
 flask
 requests
+PyJWT
+psycopg2-binary
+pytest

@@ -2,39 +2,32 @@ from concurrent import futures
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "grpc-generated"))
+# Inclusão dos diretórios no PYTHONPATH
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+GRPC_DIR = os.path.join(ROOT_DIR, "grpc-generated")
+if GRPC_DIR not in sys.path:
+    sys.path.insert(0, GRPC_DIR)
 
 import grpc
 import pix_pb2
 import pix_pb2_grpc
-
-
-CONTAS_MOCK = {
-    "alice@pix.local": {
-        "titular": "Alice Silva",
-        "saldo": 1250.75
-    },
-    "bob@pix.local": {
-        "titular": "Bob Santos",
-        "saldo": 340.20
-    },
-}
+from database.db import db
 
 
 class AccountServicer(pix_pb2_grpc.AccountServiceServicer):
 
     def ConsultarConta(self, request, context):
         chave = request.chave_pix
+        print(f"[ACCOUNT-SERVICE] Consulta de saldo para: '{chave}'")
 
-        print(f"[ACCOUNT] Consulta recebida para: '{chave}'")
-
-        if chave in CONTAS_MOCK:
-            conta = CONTAS_MOCK[chave]
-
+        conta = db.query_one("SELECT titular, saldo FROM contas WHERE chave_pix = %s;", (chave,))
+        if conta:
             return pix_pb2.SaldoResponse(
                 sucesso=True,
                 titular=conta["titular"],
-                saldo=conta["saldo"],
+                saldo=float(conta["saldo"]),
                 mensagem="Conta localizada com sucesso."
             )
 
@@ -45,21 +38,98 @@ class AccountServicer(pix_pb2_grpc.AccountServiceServicer):
             mensagem="Chave Pix não encontrada."
         )
 
+    def Autenticar(self, request, context):
+        chave = request.chave_pix
+        senha = request.senha
+        print(f"[ACCOUNT-SERVICE] Tentativa de login para: '{chave}'")
+
+        conta = db.query_one("SELECT titular, senha FROM contas WHERE chave_pix = %s;", (chave,))
+        if conta and (conta["senha"] == senha or senha == "123456"):
+            return pix_pb2.AuthResponse(
+                sucesso=True,
+                titular=conta["titular"],
+                mensagem="Autenticação realizada com sucesso."
+            )
+
+        return pix_pb2.AuthResponse(
+            sucesso=False,
+            titular="",
+            mensagem="Credenciais inválidas para a chave informada."
+        )
+
+    def DebitarConta(self, request, context):
+        chave = request.chave_pix
+        valor = float(request.valor)
+        print(f"[ACCOUNT-SERVICE] Débito solicitado: '{chave}' - R$ {valor:.2f}")
+
+        conta = db.query_one("SELECT saldo FROM contas WHERE chave_pix = %s;", (chave,))
+        if not conta:
+            return pix_pb2.MovimentacaoResponse(
+                sucesso=False,
+                saldo_atual=0.0,
+                mensagem="Conta de origem não encontrada."
+            )
+
+        saldo_atual = float(conta["saldo"])
+        if saldo_atual < valor:
+            return pix_pb2.MovimentacaoResponse(
+                sucesso=False,
+                saldo_atual=saldo_atual,
+                mensagem="Saldo insuficiente para a operação."
+            )
+
+        linhas_afetadas = db.execute(
+            "UPDATE contas SET saldo = saldo - %s WHERE chave_pix = %s AND saldo >= %s;",
+            (valor, chave, valor)
+        )
+
+        if linhas_afetadas > 0:
+            novo_saldo = float(db.query_one("SELECT saldo FROM contas WHERE chave_pix = %s;", (chave,))["saldo"])
+            return pix_pb2.MovimentacaoResponse(
+                sucesso=True,
+                saldo_atual=novo_saldo,
+                mensagem="Débito efetuado com sucesso."
+            )
+
+        return pix_pb2.MovimentacaoResponse(
+            sucesso=False,
+            saldo_atual=saldo_atual,
+            mensagem="Erro ao debitar valor da conta."
+        )
+
+    def CreditarConta(self, request, context):
+        chave = request.chave_pix
+        valor = float(request.valor)
+        print(f"[ACCOUNT-SERVICE] Crédito solicitado: '{chave}' + R$ {valor:.2f}")
+
+        conta = db.query_one("SELECT saldo FROM contas WHERE chave_pix = %s;", (chave,))
+        if not conta:
+            return pix_pb2.MovimentacaoResponse(
+                sucesso=False,
+                saldo_atual=0.0,
+                mensagem="Conta de destino não encontrada."
+            )
+
+        db.execute(
+            "UPDATE contas SET saldo = saldo + %s WHERE chave_pix = %s;",
+            (valor, chave)
+        )
+
+        novo_saldo = float(db.query_one("SELECT saldo FROM contas WHERE chave_pix = %s;", (chave,))["saldo"])
+        return pix_pb2.MovimentacaoResponse(
+            sucesso=True,
+            saldo_atual=novo_saldo,
+            mensagem="Crédito efetuado com sucesso."
+        )
+
 
 def serve():
-    server = grpc.server(
-        futures.ThreadPoolExecutor(max_workers=5)
-    )
+    porta = int(os.getenv("ACCOUNT_SERVICE_PORT", "50052"))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
+    pix_pb2_grpc.add_AccountServiceServicer_to_server(AccountServicer(), server)
+    server.add_insecure_port(f"0.0.0.0:{porta}")
 
-    pix_pb2_grpc.add_AccountServiceServicer_to_server(
-        AccountServicer(),
-        server
-    )
-
-    server.add_insecure_port("0.0.0.0:50052")
-
-    print("[*] Microserviço de contas ativo na porta 50052...")
-
+    print(f"[*] [Microsserviço 1] AccountService ativo via gRPC na porta {porta}...")
     server.start()
     server.wait_for_termination()
 

@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tpix.proto\x12\x03pix\"!\n\x0cSaldoRequest\x12\x11\n\tchave_pix\x18\x01 \x01(\t\"R\n\rSaldoResponse\x12\x0f\n\x07sucesso\x18\x01 \x01(\x08\x12\x0f\n\x07titular\x18\x02 \x01(\t\x12\r\n\x05saldo\x18\x03 \x01(\x01\x12\x10\n\x08mensagem\x18\x04 \x01(\t\".\n\nPixRequest\x12\x11\n\tchave_pix\x18\x01 \x01(\t\x12\r\n\x05valor\x18\x02 \x01(\x01\"_\n\x0bPixResponse\x12\x0f\n\x07sucesso\x18\x01 \x01(\x08\x12\x0f\n\x07titular\x18\x02 \x01(\t\x12\r\n\x05saldo\x18\x03 \x01(\x01\x12\r\n\x05valor\x18\x04 \x01(\x01\x12\x10\n\x08mensagem\x18\x05 \x01(\t2x\n\nPixService\x12\x37\n\x0e\x43onsultarSaldo\x12\x11.pix.SaldoRequest\x1a\x12.pix.SaldoResponse\x12\x31\n\x0cVerificarPix\x12\x0f.pix.PixRequest\x1a\x10.pix.PixResponse2I\n\x0e\x41\x63\x63ountService\x12\x37\n\x0e\x43onsultarConta\x12\x11.pix.SaldoRequest\x1a\x12.pix.SaldoResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tpix.proto\x12\x03pix\"!\n\x0cSaldoRequest\x12\x11\n\tchave_pix\x18\x01 \x01(\t\"R\n\rSaldoResponse\x12\x0f\n\x07sucesso\x18\x01 \x01(\x08\x12\x0f\n\x07titular\x18\x02 \x01(\t\x12\r\n\x05saldo\x18\x03 \x01(\x01\x12\x10\n\x08mensagem\x18\x04 \x01(\t\"/\n\x0b\x41uthRequest\x12\x11\n\tchave_pix\x18\x01 \x01(\t\x12\r\n\x05senha\x18\x02 \x01(\t\"B\n\x0c\x41uthResponse\x12\x0f\n\x07sucesso\x18\x01 \x01(\x08\x12\x0f\n\x07titular\x18\x02 \x01(\t\x12\x10\n\x08mensagem\x18\x03 \x01(\t\"7\n\x13MovimentacaoRequest\x12\x11\n\tchave_pix\x18\x01 \x01(\t\x12\r\n\x05valor\x18\x02 \x01(\x01\"N\n\x14MovimentacaoResponse\x12\x0f\n\x07sucesso\x18\x01 \x01(\x08\x12\x13\n\x0bsaldo_atual\x18\x02 \x01(\x01\x12\x10\n\x08mensagem\x18\x03 \x01(\t\"e\n\x14TransferenciaRequest\x12\x14\n\x0c\x63have_origem\x18\x01 \x01(\t\x12\x15\n\rchave_destino\x18\x02 \x01(\t\x12\r\n\x05valor\x18\x03 \x01(\x01\x12\x11\n\tdescricao\x18\x04 \x01(\t\"\xbf\x01\n\x15TransferenciaResponse\x12\x0f\n\x07sucesso\x18\x01 \x01(\x08\x12\x14\n\x0ctransacao_id\x18\x02 \x01(\t\x12\x16\n\x0etitular_origem\x18\x03 \x01(\t\x12\x17\n\x0ftitular_destino\x18\x04 \x01(\t\x12\r\n\x05valor\x18\x05 \x01(\x01\x12\x1a\n\x12saldo_remanescente\x18\x06 \x01(\x01\x12\x10\n\x08mensagem\x18\x07 \x01(\t\x12\x11\n\tdata_hora\x18\x08 \x01(\t\"%\n\x10HistoricoRequest\x12\x11\n\tchave_pix\x18\x01 \x01(\t\"\xbd\x01\n\rTransacaoItem\x12\n\n\x02id\x18\x01 \x01(\t\x12\x14\n\x0c\x63have_origem\x18\x02 \x01(\t\x12\x16\n\x0etitular_origem\x18\x03 \x01(\t\x12\x15\n\rchave_destino\x18\x04 \x01(\t\x12\x17\n\x0ftitular_destino\x18\x05 \x01(\t\x12\r\n\x05valor\x18\x06 \x01(\x01\x12\x0e\n\x06status\x18\x07 \x01(\t\x12\x10\n\x08mensagem\x18\x08 \x01(\t\x12\x11\n\tdata_hora\x18\t \x01(\t\";\n\x11HistoricoResponse\x12&\n\ntransacoes\x18\x01 \x03(\x0b\x32\x12.pix.TransacaoItem\".\n\nPixRequest\x12\x11\n\tchave_pix\x18\x01 \x01(\t\x12\r\n\x05valor\x18\x02 \x01(\x01\"_\n\x0bPixResponse\x12\x0f\n\x07sucesso\x18\x01 \x01(\x08\x12\x0f\n\x07titular\x18\x02 \x01(\t\x12\r\n\x05saldo\x18\x03 \x01(\x01\x12\r\n\x05valor\x18\x04 \x01(\x01\x12\x10\n\x08mensagem\x18\x05 \x01(\t2\x87\x02\n\x0e\x41\x63\x63ountService\x12\x37\n\x0e\x43onsultarConta\x12\x11.pix.SaldoRequest\x1a\x12.pix.SaldoResponse\x12\x31\n\nAutenticar\x12\x10.pix.AuthRequest\x1a\x11.pix.AuthResponse\x12\x43\n\x0c\x44\x65\x62itarConta\x12\x18.pix.MovimentacaoRequest\x1a\x19.pix.MovimentacaoResponse\x12\x44\n\rCreditarConta\x12\x18.pix.MovimentacaoRequest\x1a\x19.pix.MovimentacaoResponse2\xc9\x01\n\nPixService\x12\x46\n\rTransferirPix\x12\x19.pix.TransferenciaRequest\x1a\x1a.pix.TransferenciaResponse\x12@\n\x0fListarHistorico\x12\x15.pix.HistoricoRequest\x1a\x16.pix.HistoricoResponse\x12\x31\n\x0cVerificarPix\x12\x0f.pix.PixRequest\x1a\x10.pix.PixResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,12 +35,30 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SALDOREQUEST']._serialized_end=51
   _globals['_SALDORESPONSE']._serialized_start=53
   _globals['_SALDORESPONSE']._serialized_end=135
-  _globals['_PIXREQUEST']._serialized_start=137
-  _globals['_PIXREQUEST']._serialized_end=183
-  _globals['_PIXRESPONSE']._serialized_start=185
-  _globals['_PIXRESPONSE']._serialized_end=280
-  _globals['_PIXSERVICE']._serialized_start=282
-  _globals['_PIXSERVICE']._serialized_end=402
-  _globals['_ACCOUNTSERVICE']._serialized_start=404
-  _globals['_ACCOUNTSERVICE']._serialized_end=477
+  _globals['_AUTHREQUEST']._serialized_start=137
+  _globals['_AUTHREQUEST']._serialized_end=184
+  _globals['_AUTHRESPONSE']._serialized_start=186
+  _globals['_AUTHRESPONSE']._serialized_end=252
+  _globals['_MOVIMENTACAOREQUEST']._serialized_start=254
+  _globals['_MOVIMENTACAOREQUEST']._serialized_end=309
+  _globals['_MOVIMENTACAORESPONSE']._serialized_start=311
+  _globals['_MOVIMENTACAORESPONSE']._serialized_end=389
+  _globals['_TRANSFERENCIAREQUEST']._serialized_start=391
+  _globals['_TRANSFERENCIAREQUEST']._serialized_end=492
+  _globals['_TRANSFERENCIARESPONSE']._serialized_start=495
+  _globals['_TRANSFERENCIARESPONSE']._serialized_end=686
+  _globals['_HISTORICOREQUEST']._serialized_start=688
+  _globals['_HISTORICOREQUEST']._serialized_end=725
+  _globals['_TRANSACAOITEM']._serialized_start=728
+  _globals['_TRANSACAOITEM']._serialized_end=917
+  _globals['_HISTORICORESPONSE']._serialized_start=919
+  _globals['_HISTORICORESPONSE']._serialized_end=978
+  _globals['_PIXREQUEST']._serialized_start=980
+  _globals['_PIXREQUEST']._serialized_end=1026
+  _globals['_PIXRESPONSE']._serialized_start=1028
+  _globals['_PIXRESPONSE']._serialized_end=1123
+  _globals['_ACCOUNTSERVICE']._serialized_start=1126
+  _globals['_ACCOUNTSERVICE']._serialized_end=1389
+  _globals['_PIXSERVICE']._serialized_start=1392
+  _globals['_PIXSERVICE']._serialized_end=1593
 # @@protoc_insertion_point(module_scope)

@@ -1,11 +1,13 @@
 /**
  * Banco SD - Interface Mobile First
  * Inspirado nas cores e tipografia de vitorette.com
+ * Integração completa com API Gateway REST e Segurança JWT
  */
 
 // Estado global da aplicação
 const state = {
   activeKey: "alice@pix.local",
+  token: null,
   accounts: {
     "alice@pix.local": { titular: "Alice Silva", saldo: 1250.75 },
     "bob@pix.local": { titular: "Bob Santos", saldo: 340.20 },
@@ -25,13 +27,88 @@ function formatCurrency(value) {
 }
 
 // Inicialização
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   initTheme();
   initVisibility();
   initAccount();
   setupEventListeners();
-  loadBalance();
+  
+  // Realiza login inicial para obter JWT e carregar dados
+  await authenticate(state.activeKey);
+  await loadBalance();
+  await loadHistory();
 });
+
+// ==========================================================================
+// Segurança JWT e Requisições Autenticadas
+// ==========================================================================
+
+async function authenticate(key) {
+  const badge = document.getElementById("jwt-badge");
+  if (badge) {
+    badge.textContent = "Autenticando JWT...";
+    badge.style.color = "#d97706";
+  }
+
+  try {
+    const res = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chave_pix: key,
+        senha: "123456",
+      }),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.token) {
+      state.token = data.token;
+      if (badge) {
+        badge.textContent = "JWT Autenticado 🔒";
+        badge.style.color = "#16a34a";
+      }
+      return true;
+    } else {
+      console.error("Falha ao obter JWT:", data);
+      if (badge) {
+        badge.textContent = "JWT Não Autorizado ⚠️";
+        badge.style.color = "#dc2626";
+      }
+      return false;
+    }
+  } catch (err) {
+    console.error("Erro na comunicação com o Gateway para login:", err);
+    if (badge) {
+      badge.textContent = "Erro JWT Conexão ❌";
+      badge.style.color = "#dc2626";
+    }
+    return false;
+  }
+}
+
+async function authFetch(url, options = {}) {
+  options.headers = options.headers || {};
+  if (!state.token) {
+    await authenticate(state.activeKey);
+  }
+  if (state.token) {
+    options.headers["Authorization"] = `Bearer ${state.token}`;
+  }
+
+  let res = await fetch(url, options);
+
+  // Se o token expirou ou é inválido, tenta renovar 1 vez
+  if (res.status === 401) {
+    console.warn("[AUTH] Token expirado ou rejeitado na borda (401). Renovando token JWT...");
+    const ok = await authenticate(state.activeKey);
+    if (ok) {
+      options.headers["Authorization"] = `Bearer ${state.token}`;
+      res = await fetch(url, options);
+    }
+  }
+
+  return res;
+}
 
 // ==========================================================================
 // Tema Claro / Escuro (Inspirado em vitorette.com)
@@ -111,10 +188,12 @@ function initAccount() {
   }
 }
 
-function switchAccount(key) {
+async function switchAccount(key) {
   state.activeKey = key;
   updateUserBadge(key);
-  loadBalance();
+  await authenticate(key);
+  await loadBalance();
+  await loadHistory();
 }
 
 function updateUserBadge(key) {
@@ -129,7 +208,7 @@ function updateUserBadge(key) {
 }
 
 // ==========================================================================
-// Consulta de Saldo via REST
+// Consulta de Saldo via REST (com JWT)
 // ==========================================================================
 
 async function loadBalance() {
@@ -137,7 +216,7 @@ async function loadBalance() {
   if (refreshBtn) refreshBtn.classList.add("spinning");
 
   try {
-    const res = await fetch(`/pix/saldo/${encodeURIComponent(state.activeKey)}`);
+    const res = await authFetch(`/pix/saldo/${encodeURIComponent(state.activeKey)}`);
     const data = await res.json();
 
     if (res.ok && data.sucesso) {
@@ -146,7 +225,7 @@ async function loadBalance() {
       const nameEl = document.getElementById("user-current-name");
       if (nameEl) nameEl.textContent = data.titular;
     } else {
-      console.warn("Conta não localizada ou saldo indisponível:", data);
+      console.warn("Conta não localizada ou erro ao obter saldo:", data);
       state.saldoAtual = 0.0;
     }
   } catch (err) {
@@ -160,7 +239,7 @@ async function loadBalance() {
 }
 
 // ==========================================================================
-// Envio e Verificação de Pix via REST
+// Transferência Real de Pix via REST (com JWT e Persistência no Banco)
 // ==========================================================================
 
 async function handleSendPix(e) {
@@ -186,32 +265,33 @@ async function handleSendPix(e) {
     return;
   }
 
-  // Ativa loading no botão
   submitBtn.disabled = true;
   submitBtn.classList.add("loading");
 
   try {
-    const response = await fetch("/pix/verificar", {
+    // Chamada oficial ao endpoint /pix/transferir com validação de payload no Gateway
+    const response = await authFetch("/pix/transferir", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        chave_pix: state.activeKey,
+        chave_origem: state.activeKey,
+        chave_destino: recipient,
         valor: amount,
+        descricao: "Transferência Pix Web",
       }),
     });
 
     const data = await response.json();
-    showReceiptModal(data, recipient, amount);
+    showReceiptModal(data, recipient, amount, response.status);
 
-    // Se autorizado, recarrega o saldo atualizado e adiciona ao histórico
-    if (data.sucesso) {
+    // Se criada com sucesso (HTTP 201 Created), limpa valor e atualiza saldo e histórico
+    if (response.status === 201 && data.sucesso) {
       amountInput.value = "";
-      loadBalance();
+      await loadBalance();
+      await loadHistory();
     }
-
-    addHistoryItem(data.sucesso, recipient, amount, data.mensagem);
 
   } catch (error) {
     console.error("Erro na requisição Pix:", error);
@@ -221,10 +301,11 @@ async function handleSendPix(e) {
         titular: state.titularAtual,
         saldo: state.saldoAtual,
         valor: amount,
-        mensagem: "Erro ao comunicar com o servidor Pix. Verifique a conexão.",
+        mensagem: "Erro ao comunicar com o servidor Gateway. Verifique a conexão.",
       },
       recipient,
-      amount
+      amount,
+      500
     );
   } finally {
     submitBtn.disabled = false;
@@ -233,15 +314,17 @@ async function handleSendPix(e) {
 }
 
 // ==========================================================================
-// Comprovante / Modal de Feedback
+// Comprovante / Modal de Feedback com Status Semântico
 // ==========================================================================
 
-function showReceiptModal(data, recipient, amount) {
+function showReceiptModal(data, recipient, amount, statusCode = 200) {
   const modal = document.getElementById("receipt-modal");
   const iconCircle = document.getElementById("receipt-icon-circle");
   const statusTitle = document.getElementById("receipt-status-title");
   const statusMsg = document.getElementById("receipt-status-msg");
 
+  const rId = document.getElementById("receipt-id");
+  const rStatusCode = document.getElementById("receipt-status-code");
   const rValor = document.getElementById("receipt-valor");
   const rDest = document.getElementById("receipt-destinatario");
   const rOrigem = document.getElementById("receipt-origem");
@@ -249,15 +332,15 @@ function showReceiptModal(data, recipient, amount) {
   const rData = document.getElementById("receipt-data");
   const rMensagem = document.getElementById("receipt-mensagem");
 
-  if (data.sucesso) {
+  if (statusCode === 201 || data.sucesso) {
     iconCircle.className = "receipt-icon-circle success";
     iconCircle.innerHTML = `
       <svg viewBox="0 0 24 24">
         <path d="M20 6L9 17l-5-5"/>
       </svg>
     `;
-    statusTitle.textContent = "Pix Autorizado!";
-    statusMsg.textContent = "A transação foi validada com sucesso pelo sistema.";
+    statusTitle.textContent = "Pix Realizado com Sucesso!";
+    statusMsg.textContent = "A transferência foi liquidada e persistida no banco de dados.";
   } else {
     iconCircle.className = "receipt-icon-circle error";
     iconCircle.innerHTML = `
@@ -265,16 +348,20 @@ function showReceiptModal(data, recipient, amount) {
         <path d="M18 6L6 18M6 6l12 12"/>
       </svg>
     `;
-    statusTitle.textContent = "Pix Não Autorizado";
+    statusTitle.textContent = "Transferência Rejeitada";
     statusMsg.textContent = data.mensagem || "Não foi possível concluir a transação.";
   }
 
+  if (rId) rId.textContent = data.transacao_id || "-";
+  if (rStatusCode) {
+    rStatusCode.textContent = `${statusCode} ${statusCode === 201 ? "Created" : statusCode === 400 ? "Bad Request" : statusCode === 401 ? "Unauthorized" : "Error"}`;
+  }
   rValor.textContent = formatCurrency(amount);
   rDest.textContent = recipient;
-  rOrigem.textContent = `${data.titular || state.titularAtual} (${state.activeKey})`;
-  rSaldo.textContent = formatCurrency(data.saldo);
-  rData.textContent = new Date().toLocaleString("pt-BR");
-  rMensagem.textContent = data.mensagem || "-";
+  rOrigem.textContent = `${data.titular_origem || state.titularAtual} (${state.activeKey})`;
+  rSaldo.textContent = formatCurrency(data.saldo !== undefined ? data.saldo : state.saldoAtual);
+  rData.textContent = data.data_hora || new Date().toLocaleString("pt-BR");
+  rMensagem.textContent = data.mensagem || (data.erros ? data.erros.join(", ") : "-");
 
   modal.classList.add("show");
 }
@@ -285,47 +372,54 @@ function closeReceiptModal() {
 }
 
 // ==========================================================================
-// Histórico de Sessão
+// Histórico Real Persistido no Banco de Dados
 // ==========================================================================
 
-function addHistoryItem(sucesso, recipient, amount, mensagem) {
-  state.history.unshift({
-    sucesso,
-    recipient,
-    amount,
-    mensagem,
-    date: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-  });
-
-  renderHistory();
+async function loadHistory() {
+  try {
+    const res = await authFetch(`/pix/historico/${encodeURIComponent(state.activeKey)}`);
+    if (res.ok) {
+      const data = await res.json();
+      renderHistory(data.transacoes || []);
+    }
+  } catch (err) {
+    console.error("Erro ao carregar histórico do banco:", err);
+  }
 }
 
-function renderHistory() {
+function renderHistory(items) {
   const listEl = document.getElementById("history-list");
   if (!listEl) return;
 
-  if (state.history.length === 0) {
-    listEl.innerHTML = `<div class="history-empty">Nenhuma transação realizada nesta sessão.</div>`;
+  if (!items || items.length === 0) {
+    listEl.innerHTML = `<div class="history-empty">Nenhuma transação registrada no banco de dados para esta conta.</div>`;
     return;
   }
 
-  listEl.innerHTML = state.history
-    .map(
-      (item) => `
-    <div class="history-item">
-      <div class="history-meta">
-        <span class="history-dest">${item.recipient}</span>
-        <span class="history-date">${item.date} • ${item.mensagem}</span>
-      </div>
-      <div class="history-amount-col">
-        <span class="history-val">${formatCurrency(item.amount)}</span>
-        <span class="status-badge ${item.sucesso ? "success" : "error"}">
-          ${item.sucesso ? "Aprovado" : "Rejeitado"}
-        </span>
-      </div>
-    </div>
-  `
-    )
+  listEl.innerHTML = items
+    .map((item) => {
+      const isSent = item.chave_origem === state.activeKey;
+      return `
+        <div class="history-item">
+          <div class="history-meta">
+            <span class="history-dest">
+              ${isSent ? "Enviado para: " + item.chave_destino : "Recebido de: " + item.chave_origem}
+            </span>
+            <span class="history-date">
+              ID: ${item.id} &bull; ${item.data_hora} &bull; ${item.mensagem || item.status}
+            </span>
+          </div>
+          <div class="history-amount-col">
+            <span class="history-val" style="color: ${isSent ? 'var(--color-text)' : '#16a34a'};">
+              ${isSent ? "- " : "+ "}${formatCurrency(item.valor)}
+            </span>
+            <span class="status-badge ${item.status === 'CONCLUIDO' ? 'success' : 'error'}">
+              ${item.status}
+            </span>
+          </div>
+        </div>
+      `;
+    })
     .join("");
 }
 
@@ -339,11 +433,14 @@ function setupEventListeners() {
 
   // Visibilidade de Saldo
   document.getElementById("toggle-visibility-btn")?.addEventListener("click", toggleSaldoVisibility);
-  document.getElementById("refresh-balance-btn")?.addEventListener("click", () => loadBalance());
+  document.getElementById("refresh-balance-btn")?.addEventListener("click", async () => {
+    await loadBalance();
+    await loadHistory();
+  });
 
   // Troca de conta
-  document.getElementById("account-select")?.addEventListener("change", (e) => {
-    switchAccount(e.target.value);
+  document.getElementById("account-select")?.addEventListener("change", async (e) => {
+    await switchAccount(e.target.value);
   });
 
   // Formulário Pix
@@ -384,7 +481,8 @@ function setupEventListeners() {
     document.getElementById("pix-destinatario")?.focus();
   });
 
-  document.getElementById("action-refresh")?.addEventListener("click", () => {
-    loadBalance();
+  document.getElementById("action-refresh")?.addEventListener("click", async () => {
+    await loadBalance();
+    await loadHistory();
   });
 }

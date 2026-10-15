@@ -2,24 +2,25 @@ syntax = "proto3";
 
 package pix;
 
+// Microserviço responsável pelas contas e autenticação
+service AccountService {
+  rpc ConsultarConta (SaldoRequest) returns (SaldoResponse);
+  rpc Autenticar (AuthRequest) returns (AuthResponse);
+  rpc DebitarConta (MovimentacaoRequest) returns (MovimentacaoResponse);
+  rpc CreditarConta (MovimentacaoRequest) returns (MovimentacaoResponse);
+}
 
-// recebe as requisições do cliente e aplica as regras de negócio.
+// Microserviço responsável pelas transações e regras Pix
 service PixService {
-  rpc ConsultarSaldo (SaldoRequest) returns (SaldoResponse);
+  rpc TransferirPix (TransferenciaRequest) returns (TransferenciaResponse);
+  rpc ListarHistorico (HistoricoRequest) returns (HistoricoResponse);
   rpc VerificarPix (PixRequest) returns (PixResponse);
 }
 
-
-// microserviço responsável pelas contas.
-service AccountService {
-  rpc ConsultarConta (SaldoRequest) returns (SaldoResponse);
-}
-
-
+// Mensagens para consulta de conta / saldo
 message SaldoRequest {
   string chave_pix = 1;
 }
-
 
 message SaldoResponse {
   bool sucesso = 1;
@@ -28,15 +29,76 @@ message SaldoResponse {
   string mensagem = 4;
 }
 
+// Mensagens para autenticação
+message AuthRequest {
+  string chave_pix = 1;
+  string senha = 2;
+}
 
-// requisição para verificar se um Pix pode ser realizado.
+message AuthResponse {
+  bool sucesso = 1;
+  string titular = 2;
+  string mensagem = 3;
+}
+
+// Mensagens para débito / crédito
+message MovimentacaoRequest {
+  string chave_pix = 1;
+  double valor = 2;
+}
+
+message MovimentacaoResponse {
+  bool sucesso = 1;
+  double saldo_atual = 2;
+  string mensagem = 3;
+}
+
+// Mensagens para transferência Pix
+message TransferenciaRequest {
+  string chave_origem = 1;
+  string chave_destino = 2;
+  double valor = 3;
+  string descricao = 4;
+}
+
+message TransferenciaResponse {
+  bool sucesso = 1;
+  string transacao_id = 2;
+  string titular_origem = 3;
+  string titular_destino = 4;
+  double valor = 5;
+  double saldo_remanescente = 6;
+  string mensagem = 7;
+  string data_hora = 8;
+}
+
+// Histórico de transações
+message HistoricoRequest {
+  string chave_pix = 1;
+}
+
+message TransacaoItem {
+  string id = 1;
+  string chave_origem = 2;
+  string titular_origem = 3;
+  string chave_destino = 4;
+  string titular_destino = 5;
+  double valor = 6;
+  string status = 7;
+  string mensagem = 8;
+  string data_hora = 9;
+}
+
+message HistoricoResponse {
+  repeated TransacaoItem transacoes = 1;
+}
+
+// Compatibilidade: requisição para verificar Pix
 message PixRequest {
   string chave_pix = 1;
   double valor = 2;
 }
 
-
-// resposta da verificação do Pix.
 message PixResponse {
   bool sucesso = 1;
   string titular = 2;

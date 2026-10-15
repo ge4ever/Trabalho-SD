@@ -29,7 +29,7 @@
         </div>
         <div class="brand-info">
           <span class="brand-title">Banco SD</span>
-          <span class="brand-subtitle">Módulo Pix</span>
+          <span class="brand-subtitle">Módulo Pix &bull; <span id="jwt-badge" style="font-weight: 600; color: #16a34a;">JWT Autenticado 🔒</span></span>
         </div>
       </div>
 
@@ -244,6 +244,14 @@
 
         <div class="receipt-box">
           <div class="receipt-row">
+            <span class="receipt-label">ID Transação:</span>
+            <span id="receipt-id" class="receipt-val mono highlight">-</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Status HTTP:</span>
+            <span id="receipt-status-code" class="receipt-val mono">-</span>
+          </div>
+          <div class="receipt-row">
             <span class="receipt-label">Valor:</span>
             <span id="receipt-valor" class="receipt-val mono highlight">R$ 0,00</span>
           </div>
@@ -256,7 +264,7 @@
             <span id="receipt-origem" class="receipt-val">-</span>
           </div>
           <div class="receipt-row">
-            <span class="receipt-label">Saldo em Conta:</span>
+            <span class="receipt-label">Saldo Restante:</span>
             <span id="receipt-saldo" class="receipt-val mono">R$ 0,00</span>
           </div>
           <div class="receipt-row">

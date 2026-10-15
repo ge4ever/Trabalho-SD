@@ -5,7 +5,7 @@ import warnings
 
 import pix_pb2 as pix__pb2
 
-GRPC_GENERATED_VERSION = '1.83.1'
+GRPC_GENERATED_VERSION = '1.84.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -25,8 +25,8 @@ if _version_not_supported:
     )
 
 
-class PixServiceStub:
-    """recebe as requisições do cliente e aplica as regras de negócio.
+class AccountServiceStub:
+    """Microserviço responsável pelas contas e autenticação
     """
 
     def __init__(self, channel):
@@ -35,10 +35,219 @@ class PixServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.ConsultarSaldo = channel.unary_unary(
-                '/pix.PixService/ConsultarSaldo',
+        self.ConsultarConta = channel.unary_unary(
+                '/pix.AccountService/ConsultarConta',
                 request_serializer=pix__pb2.SaldoRequest.SerializeToString,
                 response_deserializer=pix__pb2.SaldoResponse.FromString,
+                _registered_method=True)
+        self.Autenticar = channel.unary_unary(
+                '/pix.AccountService/Autenticar',
+                request_serializer=pix__pb2.AuthRequest.SerializeToString,
+                response_deserializer=pix__pb2.AuthResponse.FromString,
+                _registered_method=True)
+        self.DebitarConta = channel.unary_unary(
+                '/pix.AccountService/DebitarConta',
+                request_serializer=pix__pb2.MovimentacaoRequest.SerializeToString,
+                response_deserializer=pix__pb2.MovimentacaoResponse.FromString,
+                _registered_method=True)
+        self.CreditarConta = channel.unary_unary(
+                '/pix.AccountService/CreditarConta',
+                request_serializer=pix__pb2.MovimentacaoRequest.SerializeToString,
+                response_deserializer=pix__pb2.MovimentacaoResponse.FromString,
+                _registered_method=True)
+
+
+class AccountServiceServicer:
+    """Microserviço responsável pelas contas e autenticação
+    """
+
+    def ConsultarConta(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Autenticar(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DebitarConta(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreditarConta(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_AccountServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'ConsultarConta': grpc.unary_unary_rpc_method_handler(
+                    servicer.ConsultarConta,
+                    request_deserializer=pix__pb2.SaldoRequest.FromString,
+                    response_serializer=pix__pb2.SaldoResponse.SerializeToString,
+            ),
+            'Autenticar': grpc.unary_unary_rpc_method_handler(
+                    servicer.Autenticar,
+                    request_deserializer=pix__pb2.AuthRequest.FromString,
+                    response_serializer=pix__pb2.AuthResponse.SerializeToString,
+            ),
+            'DebitarConta': grpc.unary_unary_rpc_method_handler(
+                    servicer.DebitarConta,
+                    request_deserializer=pix__pb2.MovimentacaoRequest.FromString,
+                    response_serializer=pix__pb2.MovimentacaoResponse.SerializeToString,
+            ),
+            'CreditarConta': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreditarConta,
+                    request_deserializer=pix__pb2.MovimentacaoRequest.FromString,
+                    response_serializer=pix__pb2.MovimentacaoResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'pix.AccountService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('pix.AccountService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class AccountService:
+    """Microserviço responsável pelas contas e autenticação
+    """
+
+    @staticmethod
+    def ConsultarConta(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/pix.AccountService/ConsultarConta',
+            pix__pb2.SaldoRequest.SerializeToString,
+            pix__pb2.SaldoResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Autenticar(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/pix.AccountService/Autenticar',
+            pix__pb2.AuthRequest.SerializeToString,
+            pix__pb2.AuthResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DebitarConta(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/pix.AccountService/DebitarConta',
+            pix__pb2.MovimentacaoRequest.SerializeToString,
+            pix__pb2.MovimentacaoResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreditarConta(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/pix.AccountService/CreditarConta',
+            pix__pb2.MovimentacaoRequest.SerializeToString,
+            pix__pb2.MovimentacaoResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+
+class PixServiceStub:
+    """Microserviço responsável pelas transações e regras Pix
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.TransferirPix = channel.unary_unary(
+                '/pix.PixService/TransferirPix',
+                request_serializer=pix__pb2.TransferenciaRequest.SerializeToString,
+                response_deserializer=pix__pb2.TransferenciaResponse.FromString,
+                _registered_method=True)
+        self.ListarHistorico = channel.unary_unary(
+                '/pix.PixService/ListarHistorico',
+                request_serializer=pix__pb2.HistoricoRequest.SerializeToString,
+                response_deserializer=pix__pb2.HistoricoResponse.FromString,
                 _registered_method=True)
         self.VerificarPix = channel.unary_unary(
                 '/pix.PixService/VerificarPix',
@@ -48,10 +257,16 @@ class PixServiceStub:
 
 
 class PixServiceServicer:
-    """recebe as requisições do cliente e aplica as regras de negócio.
+    """Microserviço responsável pelas transações e regras Pix
     """
 
-    def ConsultarSaldo(self, request, context):
+    def TransferirPix(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListarHistorico(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -66,10 +281,15 @@ class PixServiceServicer:
 
 def add_PixServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'ConsultarSaldo': grpc.unary_unary_rpc_method_handler(
-                    servicer.ConsultarSaldo,
-                    request_deserializer=pix__pb2.SaldoRequest.FromString,
-                    response_serializer=pix__pb2.SaldoResponse.SerializeToString,
+            'TransferirPix': grpc.unary_unary_rpc_method_handler(
+                    servicer.TransferirPix,
+                    request_deserializer=pix__pb2.TransferenciaRequest.FromString,
+                    response_serializer=pix__pb2.TransferenciaResponse.SerializeToString,
+            ),
+            'ListarHistorico': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListarHistorico,
+                    request_deserializer=pix__pb2.HistoricoRequest.FromString,
+                    response_serializer=pix__pb2.HistoricoResponse.SerializeToString,
             ),
             'VerificarPix': grpc.unary_unary_rpc_method_handler(
                     servicer.VerificarPix,
@@ -85,11 +305,11 @@ def add_PixServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class PixService:
-    """recebe as requisições do cliente e aplica as regras de negócio.
+    """Microserviço responsável pelas transações e regras Pix
     """
 
     @staticmethod
-    def ConsultarSaldo(request,
+    def TransferirPix(request,
             target,
             options=(),
             channel_credentials=None,
@@ -102,9 +322,36 @@ class PixService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/pix.PixService/ConsultarSaldo',
-            pix__pb2.SaldoRequest.SerializeToString,
-            pix__pb2.SaldoResponse.FromString,
+            '/pix.PixService/TransferirPix',
+            pix__pb2.TransferenciaRequest.SerializeToString,
+            pix__pb2.TransferenciaResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListarHistorico(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/pix.PixService/ListarHistorico',
+            pix__pb2.HistoricoRequest.SerializeToString,
+            pix__pb2.HistoricoResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -132,81 +379,6 @@ class PixService:
             '/pix.PixService/VerificarPix',
             pix__pb2.PixRequest.SerializeToString,
             pix__pb2.PixResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-
-class AccountServiceStub:
-    """microserviço responsável pelas contas.
-    """
-
-    def __init__(self, channel):
-        """Constructor.
-
-        Args:
-            channel: A grpc.Channel.
-        """
-        self.ConsultarConta = channel.unary_unary(
-                '/pix.AccountService/ConsultarConta',
-                request_serializer=pix__pb2.SaldoRequest.SerializeToString,
-                response_deserializer=pix__pb2.SaldoResponse.FromString,
-                _registered_method=True)
-
-
-class AccountServiceServicer:
-    """microserviço responsável pelas contas.
-    """
-
-    def ConsultarConta(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-
-def add_AccountServiceServicer_to_server(servicer, server):
-    rpc_method_handlers = {
-            'ConsultarConta': grpc.unary_unary_rpc_method_handler(
-                    servicer.ConsultarConta,
-                    request_deserializer=pix__pb2.SaldoRequest.FromString,
-                    response_serializer=pix__pb2.SaldoResponse.SerializeToString,
-            ),
-    }
-    generic_handler = grpc.method_handlers_generic_handler(
-            'pix.AccountService', rpc_method_handlers)
-    server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('pix.AccountService', rpc_method_handlers)
-
-
- # This class is part of an EXPERIMENTAL API.
-class AccountService:
-    """microserviço responsável pelas contas.
-    """
-
-    @staticmethod
-    def ConsultarConta(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/pix.AccountService/ConsultarConta',
-            pix__pb2.SaldoRequest.SerializeToString,
-            pix__pb2.SaldoResponse.FromString,
             options,
             channel_credentials,
             insecure,
