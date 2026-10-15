@@ -14,7 +14,7 @@ except ImportError:
 DB_DIR = Path(__file__).resolve().parent
 SQLITE_PATH = DB_DIR / "banco_sd.db"
 
-DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_HOST = os.getenv("DB_HOST", "35.202.26.114")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "banco_sd")
 DB_USER = os.getenv("DB_USER", "sd_user")
@@ -36,7 +36,7 @@ class DatabaseConnection:
                     dbname=DB_NAME,
                     user=DB_USER,
                     password=DB_PASSWORD,
-                    connect_timeout=2
+                    connect_timeout=5
                 )
                 conn.close()
                 self.driver = "postgres"
