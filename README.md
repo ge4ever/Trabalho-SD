@@ -73,54 +73,6 @@ O projeto consiste em um sistema distribuído de transações bancárias no esti
 
 ---
 
-## Como Executar Localmente
-
-### 1. Clonar e Instalar Dependências
-
-```bash
-git clone https://github.com/ge4ever/Trabalho-SD.git
-cd Trabalho-SD
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Iniciar o Banco de Dados Real (PostgreSQL)
-
-Suba o container do PostgreSQL com o Docker Compose:
-```bash
-docker-compose up -d
-```
-*(Nota: se preferir rodar sem Docker, o sistema utiliza automaticamente SQLite persistente em `database/banco_sd.db` sem perda de funcionalidade).*
-
-### 3. Compilar os Protocol Buffers (gRPC)
-
-```bash
-python -m grpc_tools.protoc -I proto --python_out=grpc-generated --grpc_python_out=grpc-generated proto/pix.proto
-```
-
-### 4. Iniciar os Serviços (3 Terminais)
-
-#### Terminal 1: Microsserviço 1 (AccountService gRPC)
-```bash
-source .venv/bin/activate
-python account-service/account_server.py
-```
-
-#### Terminal 2: Microsserviço 2 (PixService gRPC)
-```bash
-source .venv/bin/activate
-python pix-service/pix_server.py
-```
-
-#### Terminal 3: API Gateway REST
-```bash
-source .venv/bin/activate
-python gateway/server.py
-```
-
----
-
 ## Como Executar no Google Cloud Platform (GCP)
 
 A aplicação está pronta para operar de forma distribuída em 2 Máquinas Virtuais (Compute Engine) integradas ao banco gerenciado **Google Cloud SQL (PostgreSQL)**.
@@ -241,6 +193,56 @@ Execute o script:
 > **Comandos úteis na VM-Server:**
 > - Ver logs ao vivo do Gateway: `tmux attach -t sd_gateway`
 > - Sair do tmux sem parar o Gateway: `Ctrl + B`, depois `D`
+
+---
+
+## Como Executar Localmente (Desenvolvimento)
+
+Caso deseje rodar todo o ecossistema na sua máquina local sem a nuvem:
+
+### 1. Clonar e Instalar Dependências
+
+```bash
+git clone https://github.com/ge4ever/Trabalho-SD.git
+cd Trabalho-SD
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Iniciar o Banco de Dados Real (PostgreSQL)
+
+Suba o container do PostgreSQL com o Docker Compose:
+```bash
+docker-compose up -d
+```
+*(Nota: se preferir rodar sem Docker, o sistema utiliza automaticamente SQLite persistente em `database/banco_sd.db` sem perda de funcionalidade).*
+
+### 3. Compilar os Protocol Buffers (gRPC)
+
+```bash
+python -m grpc_tools.protoc -I proto --python_out=grpc-generated --grpc_python_out=grpc-generated proto/pix.proto
+```
+
+### 4. Iniciar os Serviços (3 Terminais)
+
+#### Terminal 1: Microsserviço 1 (AccountService gRPC)
+```bash
+source .venv/bin/activate
+python account-service/account_server.py
+```
+
+#### Terminal 2: Microsserviço 2 (PixService gRPC)
+```bash
+source .venv/bin/activate
+python pix-service/pix_server.py
+```
+
+#### Terminal 3: API Gateway REST
+```bash
+source .venv/bin/activate
+python gateway/server.py
+```
 
 ---
 
