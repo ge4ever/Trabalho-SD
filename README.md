@@ -73,7 +73,7 @@ O projeto consiste em um sistema distribuído de transações bancárias no esti
 
 ---
 
-## Como Executar o Projeto
+## Como Executar Localmente
 
 ### 1. Clonar e Instalar Dependências
 
@@ -121,12 +121,135 @@ python gateway/server.py
 
 ---
 
+## Como Executar no Google Cloud Platform (GCP)
+
+A aplicação está pronta para operar de forma distribuída em 2 Máquinas Virtuais (Compute Engine) integradas ao banco gerenciado **Google Cloud SQL (PostgreSQL)**.
+
+> [!IMPORTANT]
+> Ao criar as duas VMs no Compute Engine (Ubuntu 22.04+ ou Debian 11+), crie ambas na **mesma Região** (ex: `us-central1`) e na **mesma rede VPC** (`default`). Isso garante que a comunicação entre o Gateway e o Backend ocorra via **IP interno privado**, com altíssima velocidade, sem custos de saída e com segurança.
+
+### Topologia de Nós
+
+| Máquina / Instância | Papel no Sistema | IP Interno (VPC) | IP Externo (Público) | Portas Ativas |
+|---|---|---|---|---|
+| **VM-Server** | API Gateway (Flask REST) + Frontend Web | `<IP_INTERNO_VM_SERVER>` | `<IP_EXTERNO_VM_SERVER>` | `50051` (Pública) |
+| **VM-client** | Backend gRPC (`AccountService` e `PixService`) | `<IP_INTERNO_VM_CLIENT>` | `<IP_EXTERNO_VM_CLIENT>` | `50052`, `50053` (VPC Interna) |
+| **Cloud SQL** | Banco Relacional PostgreSQL | - | `<IP_PUBLICO_CLOUD_SQL>` | `5432` (Redes Autorizadas) |
+
+---
+
+### Passo 1: Configuração no Console do GCP
+
+#### 1. Configurar o Cloud SQL (PostgreSQL)
+1. **Criar a base de dados:**
+   - No painel da sua instância Cloud SQL, vá no menu **Bancos de dados** > clique em **Criar banco de dados**.
+   - Nome do banco: `banco_sd`.
+2. **Criar o usuário do banco:**
+   - No menu lateral **Usuários** > clique em **Adicionar conta de usuário**.
+   - Usuário: `sd_user` | Senha: `sd_password` (ou a senha de sua preferência).
+   *(As tabelas `contas` e `transacoes` e os saldos de teste são criados automaticamente pelo código na primeira conexão)*.
+3. **Liberar o acesso das VMs (Redes Autorizadas):**
+   - Vá no menu **Conexões** > aba **Rede**.
+   - Em **Redes autorizadas**, clique em **Adicionar rede** e insira os IPs externos:
+     - Nome: `vm-client` | Rede: `<IP_EXTERNO_VM_CLIENT>/32`
+     - Nome: `vm-server` | Rede: `<IP_EXTERNO_VM_SERVER>/32`
+   - Clique em **Salvar**.
+
+#### 2. Firewall da VPC (Liberar a Interface Web)
+1. Vá em **Rede VPC** > **Regras de Firewall** > **Criar regra de firewall**:
+   - **Nome:** `allow-pix-gateway`
+   - **Destino:** Todas as instâncias na rede
+   - **Intervalos de IPv4 de origem:** `0.0.0.0/0`
+   - **Protocolos e portas:** Marque `tcp` e digite `50051`.
+2. Clique em **Criar**.
+
+*(As portas internas gRPC `50052` e `50053` comunicam-se pelo IP interno da VPC e já são liberadas nativamente pela regra padrão `default-allow-internal` do GCP)*.
+
+---
+
+### Passo 2: Subir o Backend na `VM-client` (Nó gRPC)
+
+Conecte via SSH na máquina **`VM-client`**:
+
+```bash
+cd ~/Trabalho-SD
+git pull origin main
+```
+
+Você pode executar o script de 3 formas:
+
+- **Modo Interativo (Recomendado):**
+  ```bash
+  ./scripts/run_vm_client.sh
+  ```
+  *(O script perguntará o IP do Cloud SQL e a senha caso não tenham sido passados)*.
+
+- **Ou passando as variáveis diretamente:**
+  ```bash
+  DB_HOST="<IP_PUBLICO_CLOUD_SQL>" DB_PASSWORD="<SENHA_DO_BANCO>" ./scripts/run_vm_client.sh
+  ```
+
+- **Ou via arquivo `.env`:**
+  ```bash
+  cp .env.example .env
+  # Edite os valores no .env e execute:
+  ./scripts/run_vm_client.sh
+  ```
+
+**O que o script faz automaticamente:**
+- Instala `python3-venv`, `python3-pip` e `tmux` (se necessário).
+- Cria/ativa o ambiente virtual e instala as dependências.
+- Testa a conectividade TCP na porta `5432` do Cloud SQL.
+- Libera portas ocupadas e inicia `AccountService` (:50052) e `PixService` (:50053) em segundo plano no `tmux` (`sd_backend`).
+
+> **Comandos úteis na VM-client:**
+> - Ver logs ao vivo: `tmux attach -t sd_backend`
+>   *(Verifique a confirmação: `[DATABASE] Conectado ao PostgreSQL com sucesso`)*
+> - Alternar abas no tmux: `Ctrl + B`, depois `N`
+> - Sair do tmux sem fechar os serviços: `Ctrl + B`, depois `D`
+
+---
+
+### Passo 3: Subir o API Gateway na `VM-Server` (Borda e Frontend)
+
+Conecte via SSH na máquina **`VM-Server`**:
+
+```bash
+cd ~/Trabalho-SD
+git pull origin main
+```
+
+Execute o script:
+
+- **Modo Interativo:**
+  ```bash
+  ./scripts/run_vm_server.sh
+  ```
+  *(O script solicitará o IP Interno da `VM-client`)*.
+
+- **Ou informando o IP interno diretamente:**
+  ```bash
+  BACKEND_HOST="<IP_INTERNO_VM_CLIENT>" ./scripts/run_vm_server.sh
+  ```
+
+**O que o script faz automaticamente:**
+- Configura o ambiente Python e dependências.
+- Configura a rota interna para o backend via VPC.
+- Inicia o Flask REST na porta `50051` em segundo plano no `tmux` (`sd_gateway`).
+- Detecta o IP público e exibe o link pronto para acesso no navegador.
+
+> **Comandos úteis na VM-Server:**
+> - Ver logs ao vivo do Gateway: `tmux attach -t sd_gateway`
+> - Sair do tmux sem parar o Gateway: `Ctrl + B`, depois `D`
+
+---
+
 ## Como Usar
 
 ### Interface Web (Navegador)
-Com o API Gateway ativo, acesse:
-- **Local:** `http://localhost:50051/`
-- **VM / Nuvem:** `http://IP_DA_VM:50051/`
+Com os serviços iniciados, acesse pelo navegador de qualquer dispositivo:
+- **No GCP:** `http://<IP_EXTERNO_VM_SERVER>:50051/`
+- **Localmente:** `http://localhost:50051/`
 
 **Funcionalidades:**
 - **Autenticação JWT Automática:** O frontend efetua login ao selecionar a conta e injeta `Authorization: Bearer <token>` em todas as requisições.
