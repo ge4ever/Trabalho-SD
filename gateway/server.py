@@ -32,8 +32,8 @@ def resolve_service_host(env_var_name, default_port):
     """
     Resolve o endereço do serviço gRPC com suporte a:
     - Variável de ambiente específica (ACCOUNT_SERVICE_HOST ou PIX_SERVICE_HOST)
-    - Variável global BACKEND_HOST (ex: BACKEND_HOST=136.80.4.171)
-    - Fallback padrão inteligente para '136.80.4.171' ou 'localhost'
+    - Variável global BACKEND_HOST (ex: BACKEND_HOST=10.128.0.3)
+    - Fallback padrão inteligente para '10.128.0.3' (VPC GCP) ou 'localhost'
     - Limpeza automática de prefixos http:// e adição de porta se ausente.
     """
     raw_val = os.getenv(env_var_name, "").strip()
@@ -41,8 +41,10 @@ def resolve_service_host(env_var_name, default_port):
         backend_geral = os.getenv("BACKEND_HOST", "").strip()
         if backend_geral:
             raw_val = f"{backend_geral}:{default_port}"
+        elif os.getenv("TESTING", "").lower() in ("true", "1") or os.getenv("LOCAL", "").lower() in ("true", "1"):
+            raw_val = f"localhost:{default_port}"
         else:
-            raw_val = f"136.80.4.171:{default_port}"
+            raw_val = f"10.128.0.3:{default_port}"
 
     raw_val = raw_val.replace("http://", "").replace("https://", "").strip()
     if ":" not in raw_val:
