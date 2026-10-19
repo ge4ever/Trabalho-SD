@@ -187,19 +187,6 @@ python3 -m venv --clear .venv
 
 ---
 
-### Demonstração dos Microsserviços para o Professor
-
-Com as 3 VMs ativas, abra 3 janelas de terminal lado a lado conectadas via SSH:
-
-1. **Janela 1 (`vm1` - `tmux attach -t sd_gateway`):**
-   - Ao clicar no navegador ou no CLI, você verá a requisição HTTP REST chegando, a validação de JWT, a semântica de status codes (`401`, `400`, `201`) e o despacho binário gRPC.
-2. **Janela 2 (`vm2` - `tmux attach -t sd_account`):**
-   - Veja as consultas de saldo, a autenticação de credenciais e os débitos/créditos atômicos sendo solicitados pelo Gateway e pelo PixService.
-3. **Janela 3 (`vm3` - `tmux attach -t sd_pix`):**
-   - Ao executar uma transferência Pix, veja a orquestração transacional: a `vm3` faz chamadas remotas gRPC para a `vm2` (inter-microsserviços) e registra a transação final no Cloud SQL.
-
----
-
 ## Como Usar
 
 ### Interface Web (Navegador)
