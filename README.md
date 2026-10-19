@@ -128,6 +128,7 @@ Conecte via SSH na máquina **`vm2`**:
 ```bash
 cd ~/Trabalho-SD
 git pull origin main
+python3 -m venv --clear .venv
 ./scripts/run_vm2.sh
 ```
 *(Ou execute passando parâmetros diretamente: `DB_HOST="<IP_CLOUD_SQL>" DB_PASSWORD="<SENHA>" ./scripts/run_vm2.sh`)*.
