@@ -126,8 +126,8 @@ A aplicação está configurada para operar de forma distribuída em **3 Máquin
 Conecte via SSH na máquina **`vm2`**:
 
 ```bash
+git clone https://github.com/ge4ever/Trabalho-SD.git
 cd ~/Trabalho-SD
-git pull origin main
 python3 -m venv --clear .venv
 ./scripts/run_vm2.sh
 ```
@@ -148,8 +148,9 @@ python3 -m venv --clear .venv
 Conecte via SSH na máquina **`vm3`**:
 
 ```bash
+git clone https://github.com/ge4ever/Trabalho-SD.git
 cd ~/Trabalho-SD
-git pull origin main
+python3 -m venv --clear .venv
 ./scripts/run_vm3.sh
 ```
 *(O script solicitará o IP do Cloud SQL e o IP Interno da `vm2`, ou passe diretamente: `DB_HOST="<IP_CLOUD_SQL>" ACCOUNT_SERVICE_HOST="<IP_INTERNO_VM2>" ./scripts/run_vm3.sh`)*.
@@ -169,8 +170,9 @@ git pull origin main
 Conecte via SSH na máquina **`vm1`**:
 
 ```bash
+git clone https://github.com/ge4ever/Trabalho-SD.git
 cd ~/Trabalho-SD
-git pull origin main
+python3 -m venv --clear .venv
 ./scripts/run_vm1.sh
 ```
 *(O script solicitará os IPs internos da `vm2` e da `vm3`, ou passe diretamente: `ACCOUNT_SERVICE_HOST="<IP_INTERNO_VM2>" PIX_SERVICE_HOST="<IP_INTERNO_VM3>" ./scripts/run_vm1.sh`)*.
@@ -195,56 +197,6 @@ Com as 3 VMs ativas, abra 3 janelas de terminal lado a lado conectadas via SSH:
    - Veja as consultas de saldo, a autenticação de credenciais e os débitos/créditos atômicos sendo solicitados pelo Gateway e pelo PixService.
 3. **Janela 3 (`vm3` - `tmux attach -t sd_pix`):**
    - Ao executar uma transferência Pix, veja a orquestração transacional: a `vm3` faz chamadas remotas gRPC para a `vm2` (inter-microsserviços) e registra a transação final no Cloud SQL.
-
----
-
-## Como Executar Localmente (Desenvolvimento)
-
-Caso deseje rodar todo o ecossistema na sua máquina local sem a nuvem:
-
-### 1. Clonar e Instalar Dependências
-
-```bash
-git clone https://github.com/ge4ever/Trabalho-SD.git
-cd Trabalho-SD
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Iniciar o Banco de Dados Real (PostgreSQL)
-
-Suba o container do PostgreSQL com o Docker Compose:
-```bash
-docker-compose up -d
-```
-*(Nota: se preferir rodar sem Docker, o sistema utiliza automaticamente SQLite persistente em `database/banco_sd.db` sem perda de funcionalidade).*
-
-### 3. Compilar os Protocol Buffers (gRPC)
-
-```bash
-python -m grpc_tools.protoc -I proto --python_out=grpc-generated --grpc_python_out=grpc-generated proto/pix.proto
-```
-
-### 4. Iniciar os Serviços (3 Terminais)
-
-#### Terminal 1: Microsserviço 1 (AccountService gRPC)
-```bash
-source .venv/bin/activate
-python account-service/account_server.py
-```
-
-#### Terminal 2: Microsserviço 2 (PixService gRPC)
-```bash
-source .venv/bin/activate
-python pix-service/pix_server.py
-```
-
-#### Terminal 3: API Gateway REST
-```bash
-source .venv/bin/activate
-python gateway/server.py
-```
 
 ---
 
