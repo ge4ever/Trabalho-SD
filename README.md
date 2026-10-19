@@ -195,9 +195,13 @@ Com os serviços iniciados, acesse pelo navegador de qualquer dispositivo:
 - **Localmente:** `http://localhost:50051/`
 
 **Funcionalidades:**
-- **Autenticação JWT Automática:** O frontend efetua login ao selecionar a conta e injeta `Authorization: Bearer <token>` em todas as requisições.
+- **Autenticação JWT e Tela de Login:** Acesso seguro com chave Pix e senha. Demonstração em tempo real de `401 Unauthorized` na tela caso as credenciais sejam incorretas.
+- **Perfis de Usuário:**
+  - *Usuário Comum:* Acesso restrito à própria conta (`alice@pix.local` ou `bob@pix.local` com senha `123456`).
+  - *Administrador Geral:* Permissão de supervisão para auditar e alternar entre todas as contas (`admin@pix.local` com senha `admin123`).
 - **Transferência Real Pix:** O envio debita o remetente, credita o destinatário no PostgreSQL e retorna status **201 Created**.
-- **Histórico Persistido:** Exibe as transações reais gravadas na tabela `transacoes` do banco de dados.
+- **Histórico Persistido:** Exibe as transações reais gravadas na tabela `transacoes` do banco de dados relacional.
+- **Logout Seguro:** Encerramento de sessão no canto superior direito para alternar de usuário.
 
 ### Cliente de Linha de Comando (CLI)
 

@@ -933,3 +933,131 @@ body {
 .app-footer a:hover {
   text-decoration: underline;
 }
+
+/* ==========================================================================
+   Tela de Login e Gerenciamento de Sessão (401 Demo & Admin)
+   ========================================================================== */
+
+.view-container {
+  width: 100%;
+}
+
+.login-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.25rem;
+  box-shadow: var(--shadow-card);
+  margin-top: 1rem;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.login-logo-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background-color: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem auto;
+}
+
+.login-logo-circle svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.login-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.login-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.auth-error-box {
+  background-color: var(--error-bg);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.85rem;
+  margin-bottom: 1.15rem;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.error-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--error);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.2rem;
+}
+
+.error-text {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.chips-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 0.65rem;
+  margin-bottom: 0.35rem;
+}
+
+.login-chips {
+  flex-wrap: wrap;
+}
+
+.chip-admin {
+  border-color: #2563eb !important;
+  color: #2563eb !important;
+}
+
+.chip-admin:hover {
+  background-color: rgba(37, 99, 235, 0.12) !important;
+}
+
+.chip-error {
+  border-color: var(--error) !important;
+  color: var(--error) !important;
+}
+
+.chip-error:hover {
+  background-color: var(--error-bg) !important;
+}
+
+.admin-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  border: 1px solid #2563eb;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

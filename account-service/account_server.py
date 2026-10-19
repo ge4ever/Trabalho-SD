@@ -44,7 +44,7 @@ class AccountServicer(pix_pb2_grpc.AccountServiceServicer):
         print(f"[ACCOUNT-SERVICE] Tentativa de login para: '{chave}'")
 
         conta = db.query_one("SELECT titular, senha FROM contas WHERE chave_pix = %s;", (chave,))
-        if conta and (conta["senha"] == senha or senha == "123456"):
+        if conta and conta["senha"] == senha:
             return pix_pb2.AuthResponse(
                 sucesso=True,
                 titular=conta["titular"],

@@ -79,18 +79,17 @@ class DatabaseConnection:
             );
         """)
 
-        # Seeds iniciais se vazio
-        cursor.execute("SELECT COUNT(*) FROM contas;")
-        if cursor.fetchone()[0] == 0:
-            cursor.executemany("""
-                INSERT INTO contas (chave_pix, titular, saldo, senha)
-                VALUES (?, ?, ?, ?);
-            """, [
-                ("alice@pix.local", "Alice Silva", 1250.75, "123456"),
-                ("bob@pix.local", "Bob Santos", 340.20, "123456"),
-            ])
-            conn.commit()
-            print("[DATABASE] Contas iniciais reais populadas no SQLite com sucesso.")
+        # Seeds iniciais idempotentes
+        contas_iniciais = [
+            ("alice@pix.local", "Alice Silva", 1250.75, "123456"),
+            ("bob@pix.local", "Bob Santos", 340.20, "123456"),
+            ("admin@pix.local", "Administrador Geral", 99999.00, "admin123"),
+        ]
+        cursor.executemany("""
+            INSERT OR IGNORE INTO contas (chave_pix, titular, saldo, senha)
+            VALUES (?, ?, ?, ?);
+        """, contas_iniciais)
+        conn.commit()
         conn.close()
 
     def _init_postgres(self):
@@ -122,7 +121,8 @@ class DatabaseConnection:
         cursor.execute("""
             INSERT INTO contas (chave_pix, titular, saldo, senha) VALUES
             ('alice@pix.local', 'Alice Silva', 1250.75, '123456'),
-            ('bob@pix.local', 'Bob Santos', 340.20, '123456')
+            ('bob@pix.local', 'Bob Santos', 340.20, '123456'),
+            ('admin@pix.local', 'Administrador Geral', 99999.00, 'admin123')
             ON CONFLICT (chave_pix) DO NOTHING;
         """)
         conn.commit()

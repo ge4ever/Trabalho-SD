@@ -24,5 +24,6 @@ CREATE TABLE IF NOT EXISTS transacoes (
 -- População de contas iniciais reais
 INSERT INTO contas (chave_pix, titular, saldo, senha) VALUES
 ('alice@pix.local', 'Alice Silva', 1250.75, '123456'),
-('bob@pix.local', 'Bob Santos', 340.20, '123456')
+('bob@pix.local', 'Bob Santos', 340.20, '123456'),
+('admin@pix.local', 'Administrador Geral', 99999.00, 'admin123')
 ON CONFLICT (chave_pix) DO NOTHING;

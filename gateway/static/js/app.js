@@ -1,16 +1,18 @@
 /**
  * Banco SD - Interface Mobile First
  * Inspirado nas cores e tipografia de vitorette.com
- * Integração completa com API Gateway REST e Segurança JWT
+ * Integração completa com API Gateway REST, Segurança JWT, Conta Admin e Tratamento 401
  */
 
 // Estado global da aplicação
 const state = {
   activeKey: "alice@pix.local",
   token: null,
+  isAdmin: false,
   accounts: {
     "alice@pix.local": { titular: "Alice Silva", saldo: 1250.75 },
     "bob@pix.local": { titular: "Bob Santos", saldo: 340.20 },
+    "admin@pix.local": { titular: "Administrador Geral", saldo: 99999.00 },
   },
   saldoVisible: true,
   saldoAtual: 0.0,
@@ -30,24 +32,139 @@ function formatCurrency(value) {
 document.addEventListener("DOMContentLoaded", async () => {
   initTheme();
   initVisibility();
-  initAccount();
   setupEventListeners();
-  
-  // Realiza login inicial para obter JWT e carregar dados
-  await authenticate(state.activeKey);
-  await loadBalance();
-  await loadHistory();
+
+  // Verifica se há sessão ativa salva
+  const restored = restoreSession();
+  if (restored) {
+    showDashboard();
+    await loadBalance();
+    await loadHistory();
+  } else {
+    showLoginView();
+  }
 });
 
 // ==========================================================================
-// Segurança JWT e Requisições Autenticadas
+// Sessão e Autenticação JWT
 // ==========================================================================
 
-async function authenticate(key) {
-  const badge = document.getElementById("jwt-badge");
-  if (badge) {
-    badge.textContent = "Autenticando JWT...";
-    badge.style.color = "#d97706";
+function saveSession(token, chave, titular, isAdmin) {
+  sessionStorage.setItem("jwt_token", token);
+  sessionStorage.setItem("user_key", chave);
+  sessionStorage.setItem("user_titular", titular);
+  sessionStorage.setItem("is_admin", isAdmin ? "true" : "false");
+}
+
+function restoreSession() {
+  const token = sessionStorage.getItem("jwt_token");
+  const chave = sessionStorage.getItem("user_key");
+  const titular = sessionStorage.getItem("user_titular");
+  const isAdmin = sessionStorage.getItem("is_admin") === "true";
+
+  if (token && chave) {
+    state.token = token;
+    state.activeKey = chave;
+    state.titularAtual = titular || chave;
+    state.isAdmin = isAdmin;
+    return true;
+  }
+  return false;
+}
+
+function clearSession() {
+  sessionStorage.removeItem("jwt_token");
+  sessionStorage.removeItem("user_key");
+  sessionStorage.removeItem("user_titular");
+  sessionStorage.removeItem("is_admin");
+  state.token = null;
+  state.isAdmin = false;
+}
+
+function showLoginView() {
+  const loginView = document.getElementById("login-view");
+  const dashView = document.getElementById("dashboard-view");
+  const logoutBtn = document.getElementById("logout-btn");
+  const jwtBadge = document.getElementById("jwt-badge");
+
+  if (loginView) loginView.style.display = "block";
+  if (dashView) dashView.style.display = "none";
+  if (logoutBtn) logoutBtn.style.display = "none";
+  if (jwtBadge) {
+    jwtBadge.textContent = "Não Autenticado 🔒";
+    jwtBadge.style.color = "#d97706";
+  }
+}
+
+function showDashboard() {
+  const loginView = document.getElementById("login-view");
+  const dashView = document.getElementById("dashboard-view");
+  const logoutBtn = document.getElementById("logout-btn");
+  const jwtBadge = document.getElementById("jwt-badge");
+  const roleLabel = document.getElementById("user-role-label");
+  const accountSelect = document.getElementById("account-select");
+
+  if (loginView) loginView.style.display = "none";
+  if (dashView) dashView.style.display = "block";
+  if (logoutBtn) logoutBtn.style.display = "inline-flex";
+
+  if (jwtBadge) {
+    if (state.isAdmin) {
+      jwtBadge.innerHTML = 'Admin JWT <span class="admin-tag">🛡️ ADMIN</span>';
+      jwtBadge.style.color = "#2563eb";
+    } else {
+      jwtBadge.textContent = "JWT Autenticado 🔒";
+      jwtBadge.style.color = "#16a34a";
+    }
+  }
+
+  if (roleLabel) {
+    roleLabel.textContent = state.isAdmin ? "Administrador Geral" : "Conta ativa";
+  }
+
+  if (accountSelect) {
+    // Admin tem controle para alternar e auditar todas as contas; usuário comum fica restrito à sua conta
+    if (state.isAdmin) {
+      accountSelect.style.display = "inline-block";
+      accountSelect.disabled = false;
+      accountSelect.value = state.activeKey;
+    } else {
+      accountSelect.style.display = "none";
+    }
+  }
+
+  updateUserBadge(state.activeKey);
+}
+
+async function handleLoginSubmit(e) {
+  if (e) e.preventDefault();
+
+  const keyInput = document.getElementById("login-chave");
+  const passInput = document.getElementById("login-senha");
+  const submitBtn = document.getElementById("btn-submit-login");
+  const errorAlert = document.getElementById("login-error-alert");
+  const errorMsg = document.getElementById("login-error-message");
+  const jwtBadge = document.getElementById("jwt-badge");
+
+  const key = (keyInput?.value || "").trim();
+  const pass = (passInput?.value || "").trim();
+
+  if (!key || !pass) {
+    if (errorAlert && errorMsg) {
+      errorMsg.textContent = "Preencha a chave Pix e a senha.";
+      errorAlert.style.display = "block";
+    }
+    return;
+  }
+
+  if (errorAlert) errorAlert.style.display = "none";
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add("loading");
+  }
+  if (jwtBadge) {
+    jwtBadge.textContent = "Autenticando...";
+    jwtBadge.style.color = "#d97706";
   }
 
   try {
@@ -56,54 +173,78 @@ async function authenticate(key) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chave_pix: key,
-        senha: "123456",
+        senha: pass,
       }),
     });
 
     const data = await res.json();
+
+    if (res.status === 401) {
+      // Demonstração visual do erro 401 Unauthorized
+      if (errorAlert && errorMsg) {
+        errorMsg.textContent = data.mensagem || "Credenciais inválidas para a chave informada.";
+        errorAlert.style.display = "block";
+      }
+      if (jwtBadge) {
+        jwtBadge.textContent = "401 Não Autorizado ⚠️";
+        jwtBadge.style.color = "#dc2626";
+      }
+      return;
+    }
+
     if (res.ok && data.token) {
       state.token = data.token;
-      if (badge) {
-        badge.textContent = "JWT Autenticado 🔒";
-        badge.style.color = "#16a34a";
-      }
-      return true;
+      state.activeKey = data.chave_pix;
+      state.titularAtual = data.titular;
+      state.isAdmin = !!data.is_admin;
+
+      saveSession(data.token, data.chave_pix, data.titular, state.isAdmin);
+      showDashboard();
+      await loadBalance();
+      await loadHistory();
     } else {
-      console.error("Falha ao obter JWT:", data);
-      if (badge) {
-        badge.textContent = "JWT Não Autorizado ⚠️";
-        badge.style.color = "#dc2626";
+      if (errorAlert && errorMsg) {
+        errorMsg.textContent = data.mensagem || "Erro na autenticação.";
+        errorAlert.style.display = "block";
       }
-      return false;
     }
   } catch (err) {
-    console.error("Erro na comunicação com o Gateway para login:", err);
-    if (badge) {
-      badge.textContent = "Erro JWT Conexão ❌";
-      badge.style.color = "#dc2626";
+    console.error("Erro ao autenticar com o Gateway:", err);
+    if (errorAlert && errorMsg) {
+      errorMsg.textContent = "Erro de conexão ao comunicar com o Gateway (porta 50051).";
+      errorAlert.style.display = "block";
     }
-    return false;
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("loading");
+    }
   }
+}
+
+function handleLogout() {
+  clearSession();
+  showLoginView();
+  const passInput = document.getElementById("login-senha");
+  if (passInput) passInput.value = "";
+  const errorAlert = document.getElementById("login-error-alert");
+  if (errorAlert) errorAlert.style.display = "none";
 }
 
 async function authFetch(url, options = {}) {
   options.headers = options.headers || {};
-  if (!state.token) {
-    await authenticate(state.activeKey);
-  }
   if (state.token) {
     options.headers["Authorization"] = `Bearer ${state.token}`;
   }
 
   let res = await fetch(url, options);
 
-  // Se o token expirou ou é inválido, tenta renovar 1 vez
   if (res.status === 401) {
-    console.warn("[AUTH] Token expirado ou rejeitado na borda (401). Renovando token JWT...");
-    const ok = await authenticate(state.activeKey);
-    if (ok) {
-      options.headers["Authorization"] = `Bearer ${state.token}`;
-      res = await fetch(url, options);
+    console.warn("[AUTH] Requisição rejeitada com 401 na borda pelo API Gateway.");
+    const badge = document.getElementById("jwt-badge");
+    if (badge) {
+      badge.textContent = "401 Não Autorizado ❌";
+      badge.style.color = "#dc2626";
     }
   }
 
@@ -191,7 +332,6 @@ function initAccount() {
 async function switchAccount(key) {
   state.activeKey = key;
   updateUserBadge(key);
-  await authenticate(key);
   await loadBalance();
   await loadHistory();
 }
@@ -341,6 +481,16 @@ function showReceiptModal(data, recipient, amount, statusCode = 200) {
     `;
     statusTitle.textContent = "Pix Realizado com Sucesso!";
     statusMsg.textContent = "A transferência foi liquidada e persistida no banco de dados.";
+  } else if (statusCode === 401) {
+    iconCircle.className = "receipt-icon-circle error";
+    iconCircle.innerHTML = `
+      <svg viewBox="0 0 24 24">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+    `;
+    statusTitle.textContent = "401 Unauthorized (Barrado na Borda)";
+    statusMsg.textContent = "O API Gateway interceptou a requisição e bloqueou o acesso antes de acionar os microsserviços.";
   } else {
     iconCircle.className = "receipt-icon-circle error";
     iconCircle.innerHTML = `
@@ -428,6 +578,23 @@ function renderHistory(items) {
 // ==========================================================================
 
 function setupEventListeners() {
+  // Login
+  document.getElementById("login-form")?.addEventListener("submit", handleLoginSubmit);
+
+  // Logout
+  document.getElementById("logout-btn")?.addEventListener("click", handleLogout);
+
+  // Chips de atalho rápido no Login
+  document.querySelectorAll(".chip-login").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const keyInput = document.getElementById("login-chave");
+      const passInput = document.getElementById("login-senha");
+      if (keyInput) keyInput.value = chip.dataset.key;
+      if (passInput) passInput.value = chip.dataset.pass;
+      document.getElementById("login-form")?.requestSubmit();
+    });
+  });
+
   // Tema
   document.getElementById("theme-toggle-btn")?.addEventListener("click", toggleTheme);
 

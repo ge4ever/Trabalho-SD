@@ -126,12 +126,18 @@ def login():
         }), 400
 
     chave = dados.get("chave_pix", "").strip()
-    senha = dados.get("senha", "").strip() or "123456"
+    senha = dados.get("senha", "").strip()
 
     if not chave:
         return jsonify({
             "sucesso": False,
             "mensagem": "O campo 'chave_pix' é obrigatório para autenticação."
+        }), 400
+
+    if not senha:
+        return jsonify({
+            "sucesso": False,
+            "mensagem": "O campo 'senha' é obrigatório para autenticação."
         }), 400
 
     # Tradução de Protocolo: REST/JSON -> gRPC com AccountService
@@ -148,15 +154,17 @@ def login():
             print(f"[GATEWAY] [LOGIN] Autenticação recusada para '{chave}': {auth_resp.mensagem}")
             return jsonify({
                 "sucesso": False,
-                "mensagem": auth_resp.mensagem
+                "mensagem": auth_resp.mensagem or "Credenciais inválidas para a chave informada."
             }), 401
 
-        # Geração do Token JWT com validade de 24 horas
+        # Geração do Token JWT com validade de 24 horas e claim de admin
+        is_admin = (chave == "admin@pix.local")
         exp_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
         token = jwt.encode(
             {
                 "sub": chave,
                 "titular": auth_resp.titular,
+                "is_admin": is_admin,
                 "exp": exp_time,
                 "iat": datetime.datetime.now(datetime.timezone.utc),
             },
@@ -164,12 +172,13 @@ def login():
             algorithm=JWT_ALGORITHM
         )
 
-        print(f"[GATEWAY] [LOGIN] Sucesso! JWT emitido para '{chave}' ({auth_resp.titular})")
+        print(f"[GATEWAY] [LOGIN] Sucesso! JWT emitido para '{chave}' ({auth_resp.titular}, admin={is_admin})")
         return jsonify({
             "sucesso": True,
             "token": token,
             "chave_pix": chave,
             "titular": auth_resp.titular,
+            "is_admin": is_admin,
             "mensagem": "Login efetuado com sucesso."
         }), 200
 

@@ -6,6 +6,12 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+# Garante que os testes locais utilizem localhost e não dependam dos IPs da nuvem
+os.environ.setdefault("TESTING", "1")
+os.environ.setdefault("LOCAL", "1")
+os.environ.setdefault("ACCOUNT_SERVICE_HOST", "localhost:50052")
+os.environ.setdefault("PIX_SERVICE_HOST", "localhost:50053")
+
 from gateway.server import app, JWT_SECRET, JWT_ALGORITHM
 from database.db import db
 import jwt
@@ -47,6 +53,14 @@ def test_401_unauthorized_token_invalido(client):
     assert "inválido" in res.json["mensagem"].lower()
 
 
+def test_401_login_senha_incorreta(client):
+    """Demonstração de 401 Unauthorized ao errar credenciais no login."""
+    res = client.post("/auth/login", json={"chave_pix": "alice@pix.local", "senha": "senha_errada"})
+    assert res.status_code == 401
+    assert res.json["sucesso"] is False
+    assert "inválid" in res.json["mensagem"].lower()
+
+
 def test_login_e_emissao_jwt(client):
     """Requisito 6: Emissão correta de JWT assinado após validação no microsserviço de contas."""
     res = client.post("/auth/login", json={"chave_pix": "alice@pix.local", "senha": "123456"})
@@ -54,12 +68,26 @@ def test_login_e_emissao_jwt(client):
     data = res.json
     assert data["sucesso"] is True
     assert "token" in data
+    assert data.get("is_admin") is False
     token = data["token"]
 
     # Decodifica para checar integridade
     payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
     assert payload["sub"] == "alice@pix.local"
     assert payload["titular"] == "Alice Silva"
+    assert payload.get("is_admin") is False
+
+
+def test_login_admin(client):
+    """Login de administrador com emissão de token com claim de admin."""
+    res = client.post("/auth/login", json={"chave_pix": "admin@pix.local", "senha": "admin123"})
+    assert res.status_code == 200
+    data = res.json
+    assert data["sucesso"] is True
+    assert data["is_admin"] is True
+    payload = jwt.decode(data["token"], JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    assert payload["is_admin"] is True
+    assert payload["sub"] == "admin@pix.local"
 
 
 def test_400_bad_request_validacao_payload(client):
