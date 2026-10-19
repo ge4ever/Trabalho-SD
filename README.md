@@ -95,11 +95,11 @@ A aplicação está configurada para operar de forma distribuída em **3 Máquin
 
 #### 1. Configurar o Cloud SQL (PostgreSQL)
 1. **Criar a base de dados:**
-   - No painel da sua instância Cloud SQL, vá no menu **Bancos de dados** > clique em **Criar banco de dados**.
-   - Nome do banco: `banco_sd`.
+   - No painel da sua instância Cloud SQL do PostgreSQL já criada, vá no menu **Bancos de dados** > clique em **Criar banco de dados**.
+   - Nome do banco: `banco-sd`.
 2. **Criar o usuário do banco:**
    - No menu lateral **Usuários** > clique em **Adicionar conta de usuário**.
-   - Usuário: `sd_user` | Senha: `sd_password` (ou a senha de sua preferência).
+   - Usuário: `sd_user` | Senha: `Sistemas#26` (ou a senha de sua preferência).
    *(As tabelas `contas` e `transacoes` e os saldos de teste são criados automaticamente pelo código na primeira conexão)*.
 3. **Liberar o acesso das VMs (Redes Autorizadas):**
    - Vá no menu **Conexões** > aba **Rede**.
@@ -131,7 +131,7 @@ cd ~/Trabalho-SD
 python3 -m venv --clear .venv
 ./scripts/run_vm2.sh
 ```
-*(Ou execute passando parâmetros diretamente: `DB_HOST="<IP_CLOUD_SQL>" DB_PASSWORD="<SENHA>" ./scripts/run_vm2.sh`)*.
+*(O script vai soliciar as informações sobre o banco de dados e usuário, por isso é importante lembrar de sua senha)*.
 
 **O que o script faz automaticamente:**
 - Configura o ambiente Python (`.venv` e dependências).
@@ -153,7 +153,7 @@ cd ~/Trabalho-SD
 python3 -m venv --clear .venv
 ./scripts/run_vm3.sh
 ```
-*(O script solicitará o IP do Cloud SQL e o IP Interno da `vm2`, ou passe diretamente: `DB_HOST="<IP_CLOUD_SQL>" ACCOUNT_SERVICE_HOST="<IP_INTERNO_VM2>" ./scripts/run_vm3.sh`)*.
+*(O script solicitará informações do Cloud SQL e o IP Interno da `vm2`)*.
 
 **O que o script faz automaticamente:**
 - Configura o ambiente Python.
@@ -175,7 +175,7 @@ cd ~/Trabalho-SD
 python3 -m venv --clear .venv
 ./scripts/run_vm1.sh
 ```
-*(O script solicitará os IPs internos da `vm2` e da `vm3`, ou passe diretamente: `ACCOUNT_SERVICE_HOST="<IP_INTERNO_VM2>" PIX_SERVICE_HOST="<IP_INTERNO_VM3>" ./scripts/run_vm1.sh`)*.
+*(O script solicitará os IPs internos da `vm2` e da `vm3`)*.
 
 **O que o script faz automaticamente:**
 - Configura o ambiente Python e rotas para os dois microsserviços.
