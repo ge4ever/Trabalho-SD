@@ -16,7 +16,17 @@ import pix_pb2
 import pix_pb2_grpc
 from database.db import db
 
-ACCOUNT_SERVICE_HOST = os.getenv("ACCOUNT_SERVICE_HOST", "localhost:50052")
+def resolve_account_host():
+    raw_val = os.getenv("ACCOUNT_SERVICE_HOST", "localhost:50052").strip()
+    raw_val = raw_val.replace("http://", "").replace("https://", "").strip()
+    if not raw_val:
+        raw_val = "localhost:50052"
+    if ":" not in raw_val:
+        raw_val = f"{raw_val}:50052"
+    return raw_val
+
+
+ACCOUNT_SERVICE_HOST = resolve_account_host()
 
 
 class PixServicer(pix_pb2_grpc.PixServiceServicer):

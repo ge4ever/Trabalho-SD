@@ -1,0 +1,1 @@
+run_vm3_pix.sh

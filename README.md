@@ -75,17 +75,18 @@ O projeto consiste em um sistema distribuído de transações bancárias no esti
 
 ## Como Executar no Google Cloud Platform (GCP)
 
-A aplicação está pronta para operar de forma distribuída em 2 Máquinas Virtuais (Compute Engine) integradas ao banco gerenciado **Google Cloud SQL (PostgreSQL)**.
+A aplicação está configurada para operar de forma distribuída em **3 Máquinas Virtuais (Compute Engine)** integradas ao banco gerenciado **Google Cloud SQL (PostgreSQL)**, permitindo demonstrar com clareza o papel e os logs em tempo real de cada microsserviço:
 
 > [!IMPORTANT]
-> Ao criar as duas VMs no Compute Engine (Ubuntu 22.04+ ou Debian 11+), crie ambas na **mesma Região** (ex: `us-central1`) e na **mesma rede VPC** (`default`). Isso garante que a comunicação entre o Gateway e o Backend ocorra via **IP interno privado**, com altíssima velocidade, sem custos de saída e com segurança.
+> Ao criar as três VMs no Compute Engine (Ubuntu 22.04+ ou Debian 11+), crie todas na **mesma Região** (ex: `us-central1`) e na **mesma rede VPC** (`default`). Isso garante que a comunicação gRPC entre elas ocorra via **IP interno privado**, com altíssima velocidade, sem custos de tráfego e com segurança.
 
-### Topologia de Nós
+### Topologia de Nós (3 VMs + Cloud SQL)
 
 | Máquina / Instância | Papel no Sistema | IP Interno (VPC) | IP Externo (Público) | Portas Ativas |
 |---|---|---|---|---|
-| **VM-Server** | API Gateway (Flask REST) + Frontend Web | `<IP_INTERNO_VM_SERVER>` | `<IP_EXTERNO_VM_SERVER>` | `50051` (Pública) |
-| **VM-client** | Backend gRPC (`AccountService` e `PixService`) | `<IP_INTERNO_VM_CLIENT>` | `<IP_EXTERNO_VM_CLIENT>` | `50052`, `50053` (VPC Interna) |
+| **`vm1`** | API Gateway (Flask REST) + Frontend Web | `<IP_INTERNO_VM1>` | `<IP_EXTERNO_VM1>` | `50051` (Pública) |
+| **`vm2`** | `AccountService` (gRPC) | `<IP_INTERNO_VM2>` | `<IP_EXTERNO_VM2>` | `50052` (VPC Interna) |
+| **`vm3`** | `PixService` (gRPC) | `<IP_INTERNO_VM3>` | `<IP_EXTERNO_VM3>` | `50053` (VPC Interna) |
 | **Cloud SQL** | Banco Relacional PostgreSQL | - | `<IP_PUBLICO_CLOUD_SQL>` | `5432` (Redes Autorizadas) |
 
 ---
@@ -102,9 +103,10 @@ A aplicação está pronta para operar de forma distribuída em 2 Máquinas Virt
    *(As tabelas `contas` e `transacoes` e os saldos de teste são criados automaticamente pelo código na primeira conexão)*.
 3. **Liberar o acesso das VMs (Redes Autorizadas):**
    - Vá no menu **Conexões** > aba **Rede**.
-   - Em **Redes autorizadas**, clique em **Adicionar rede** e insira os IPs externos:
-     - Nome: `vm-client` | Rede: `<IP_EXTERNO_VM_CLIENT>/32`
-     - Nome: `vm-server` | Rede: `<IP_EXTERNO_VM_SERVER>/32`
+   - Em **Redes autorizadas**, clique em **Adicionar rede** e insira os IPs externos das máquinas:
+     - Nome: `vm1` | Rede: `<IP_EXTERNO_VM1>/32`
+     - Nome: `vm2` | Rede: `<IP_EXTERNO_VM2>/32`
+     - Nome: `vm3` | Rede: `<IP_EXTERNO_VM3>/32`
    - Clique em **Salvar**.
 
 #### 2. Firewall da VPC (Liberar a Interface Web)
@@ -115,84 +117,83 @@ A aplicação está pronta para operar de forma distribuída em 2 Máquinas Virt
    - **Protocolos e portas:** Marque `tcp` e digite `50051`.
 2. Clique em **Criar**.
 
-*(As portas internas gRPC `50052` e `50053` comunicam-se pelo IP interno da VPC e já são liberadas nativamente pela regra padrão `default-allow-internal` do GCP)*.
+*(As portas internas gRPC `50052` e `50053` comunicam-se pelos IPs internos da VPC e já são liberadas nativamente pela regra padrão `default-allow-internal` do GCP)*.
 
 ---
 
-### Passo 2: Subir o Backend na `VM-client` (Nó gRPC)
+### Passo 2: Subir o `AccountService` na `vm2`
 
-Conecte via SSH na máquina **`VM-client`**:
+Conecte via SSH na máquina **`vm2`**:
 
 ```bash
 cd ~/Trabalho-SD
 git pull origin main
+./scripts/run_vm2.sh
 ```
-
-Você pode executar o script de 3 formas:
-
-- **Modo Interativo (Recomendado):**
-  ```bash
-  ./scripts/run_vm_client.sh
-  ```
-  *(O script perguntará o IP do Cloud SQL e a senha caso não tenham sido passados)*.
-
-- **Ou passando as variáveis diretamente:**
-  ```bash
-  DB_HOST="<IP_PUBLICO_CLOUD_SQL>" DB_PASSWORD="<SENHA_DO_BANCO>" ./scripts/run_vm_client.sh
-  ```
-
-- **Ou via arquivo `.env`:**
-  ```bash
-  cp .env.example .env
-  # Edite os valores no .env e execute:
-  ./scripts/run_vm_client.sh
-  ```
+*(Ou execute passando parâmetros diretamente: `DB_HOST="<IP_CLOUD_SQL>" DB_PASSWORD="<SENHA>" ./scripts/run_vm2.sh`)*.
 
 **O que o script faz automaticamente:**
-- Instala `python3-venv`, `python3-pip` e `tmux` (se necessário).
-- Cria/ativa o ambiente virtual e instala as dependências.
+- Configura o ambiente Python (`.venv` e dependências).
 - Testa a conectividade TCP na porta `5432` do Cloud SQL.
-- Libera portas ocupadas e inicia `AccountService` (:50052) e `PixService` (:50053) em segundo plano no `tmux` (`sd_backend`).
+- Inicia o `AccountService` na porta `50052` em segundo plano no `tmux` (`sd_account`).
 
-> **Comandos úteis na VM-client:**
-> - Ver logs ao vivo: `tmux attach -t sd_backend`
->   *(Verifique a confirmação: `[DATABASE] Conectado ao PostgreSQL com sucesso`)*
-> - Alternar abas no tmux: `Ctrl + B`, depois `N`
-> - Sair do tmux sem fechar os serviços: `Ctrl + B`, depois `D`
+> **Para ver os logs na `vm2`:** `tmux attach -t sd_account`  
+> *(Para sair sem fechar: `Ctrl + B`, depois `D`)*
 
 ---
 
-### Passo 3: Subir o API Gateway na `VM-Server` (Borda e Frontend)
+### Passo 3: Subir o `PixService` na `vm3`
 
-Conecte via SSH na máquina **`VM-Server`**:
+Conecte via SSH na máquina **`vm3`**:
 
 ```bash
 cd ~/Trabalho-SD
 git pull origin main
+./scripts/run_vm3.sh
 ```
-
-Execute o script:
-
-- **Modo Interativo:**
-  ```bash
-  ./scripts/run_vm_server.sh
-  ```
-  *(O script solicitará o IP Interno da `VM-client`)*.
-
-- **Ou informando o IP interno diretamente:**
-  ```bash
-  BACKEND_HOST="<IP_INTERNO_VM_CLIENT>" ./scripts/run_vm_server.sh
-  ```
+*(O script solicitará o IP do Cloud SQL e o IP Interno da `vm2`, ou passe diretamente: `DB_HOST="<IP_CLOUD_SQL>" ACCOUNT_SERVICE_HOST="<IP_INTERNO_VM2>" ./scripts/run_vm3.sh`)*.
 
 **O que o script faz automaticamente:**
-- Configura o ambiente Python e dependências.
-- Configura a rota interna para o backend via VPC.
-- Inicia o Flask REST na porta `50051` em segundo plano no `tmux` (`sd_gateway`).
-- Detecta o IP público e exibe o link pronto para acesso no navegador.
+- Configura o ambiente Python.
+- Testa a conectividade com o Cloud SQL e com a `vm2` (`AccountService:50052`).
+- Inicia o `PixService` na porta `50053` em segundo plano no `tmux` (`sd_pix`).
 
-> **Comandos úteis na VM-Server:**
-> - Ver logs ao vivo do Gateway: `tmux attach -t sd_gateway`
-> - Sair do tmux sem parar o Gateway: `Ctrl + B`, depois `D`
+> **Para ver os logs na `vm3`:** `tmux attach -t sd_pix`  
+> *(Para sair sem fechar: `Ctrl + B`, depois `D`)*
+
+---
+
+### Passo 4: Subir o API Gateway e Frontend na `vm1`
+
+Conecte via SSH na máquina **`vm1`**:
+
+```bash
+cd ~/Trabalho-SD
+git pull origin main
+./scripts/run_vm1.sh
+```
+*(O script solicitará os IPs internos da `vm2` e da `vm3`, ou passe diretamente: `ACCOUNT_SERVICE_HOST="<IP_INTERNO_VM2>" PIX_SERVICE_HOST="<IP_INTERNO_VM3>" ./scripts/run_vm1.sh`)*.
+
+**O que o script faz automaticamente:**
+- Configura o ambiente Python e rotas para os dois microsserviços.
+- Inicia o Flask REST na porta `50051` em segundo plano no `tmux` (`sd_gateway`).
+- Detecta o IP público e exibe a URL pronta para acesso no navegador: `http://<IP_EXTERNO_VM1>:50051/`.
+
+> **Para ver os logs na `vm1`:** `tmux attach -t sd_gateway`  
+> *(Para sair sem fechar: `Ctrl + B`, depois `D`)*
+
+---
+
+### Demonstração dos Microsserviços para o Professor
+
+Com as 3 VMs ativas, abra 3 janelas de terminal lado a lado conectadas via SSH:
+
+1. **Janela 1 (`vm1` - `tmux attach -t sd_gateway`):**
+   - Ao clicar no navegador ou no CLI, você verá a requisição HTTP REST chegando, a validação de JWT, a semântica de status codes (`401`, `400`, `201`) e o despacho binário gRPC.
+2. **Janela 2 (`vm2` - `tmux attach -t sd_account`):**
+   - Veja as consultas de saldo, a autenticação de credenciais e os débitos/créditos atômicos sendo solicitados pelo Gateway e pelo PixService.
+3. **Janela 3 (`vm3` - `tmux attach -t sd_pix`):**
+   - Ao executar uma transferência Pix, veja a orquestração transacional: a `vm3` faz chamadas remotas gRPC para a `vm2` (inter-microsserviços) e registra a transação final no Cloud SQL.
 
 ---
 
@@ -250,7 +251,7 @@ python gateway/server.py
 
 ### Interface Web (Navegador)
 Com os serviços iniciados, acesse pelo navegador de qualquer dispositivo:
-- **No GCP:** `http://<IP_EXTERNO_VM_SERVER>:50051/`
+- **No GCP:** `http://<IP_EXTERNO_VM1>:50051/`
 - **Localmente:** `http://localhost:50051/`
 
 **Funcionalidades:**
@@ -262,7 +263,7 @@ Com os serviços iniciados, acesse pelo navegador de qualquer dispositivo:
 
 ```bash
 source .venv/bin/activate
-# Alice transfere R$ 50 para Bob
+# Alice transfere R$ 50 para Bob (local ou definindo SERVER_HOST=<IP_EXTERNO_VM1>)
 python client/client.py bob@pix.local 50.00
 ```
 
