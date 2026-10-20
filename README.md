@@ -31,32 +31,44 @@ O projeto consiste em um sistema distribuído de transações bancárias no esti
 ## Arquitetura do Sistema
 
 ```text
-       [ Frontend Web (Navegador) ]   ou   [ Cliente CLI ]
+                        USUÁRIO
+                           |
+                           v
+                +----------------------+
+                |    FRONTEND WEB      |
+                |    HTML/CSS/JS       |
+                +----------------------+
                           |
                           | HTTP/JSON (REST) + JWT Bearer Token
                           v
-         ======================================
-          API GATEWAY (Flask REST na porta 50051)
-           - Ponto Único de Entrada
-           - Middleware JWT (Barrar 401)
-           - Validação de Payloads JSON (Barrar 400)
-           - Tradução REST/JSON <-> gRPC/Protobuf
-         ======================================
-                 |                     |
-   gRPC Protobuf | :50052              | gRPC Protobuf :50053
-                 v                     v
-         +----------------+    +-----------------------+
-         | AccountService |    |      PixService       |
-         |     (gRPC)     |    |        (gRPC)         |
-         +----------------+    +-----------------------+
+                +----------------------+
+                |     API GATEWAY      |
+                |    Flask :50051      |
+                |                      |
+                | - Autenticação JWT   |
+                | - Validação de dados |
+                | - Tradução de dados  |
+                +----------------------+
+                  |                   |
+       gRPC :50052|                   | gRPC :50053
+                  v                   v
+        +----------------+     +----------------+
+        | AccountService |     |   PixService   |
+        |                |     |                |
+        | - Autenticação |     | - Transferir   |
+        | - Consultar    |     | - Histórico    |
+        | - Debitar      |     | - Verificar Pix|
+        | - Creditar     |     |                |
+        +----------------+     +----------------+
                  |                     |
                  +----------+----------+
-                            |
+                            | PixService chama contas
                             v
-               [ BANCO DE DADOS REAL ]
-             PostgreSQL (ou SQLite local)
-             - Tabela: 'contas'
-             - Tabela: 'transacoes'
+                   +---------------+
+                   |    BANCO      |
+                   |  PostgreSQL   |
+                   | ou SQLite     |
+                   +---------------+
 ```
 
 ---
