@@ -14,11 +14,15 @@ except ImportError:
 DB_DIR = Path(__file__).resolve().parent
 SQLITE_PATH = DB_DIR / "banco_sd.db"
 
-DB_HOST = os.getenv("DB_HOST", "35.202.26.114")
+is_local_mode = os.getenv("LOCAL", "").lower() in ("true", "1") or os.getenv("TESTING", "").lower() in ("true", "1")
+default_db_host = "localhost" if is_local_mode else "35.202.26.114"
+
+DB_HOST = os.getenv("DB_HOST", default_db_host)
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "banco_sd")
 DB_USER = os.getenv("DB_USER", "sd_user")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "sd_password")
+
 
 
 class DatabaseConnection:

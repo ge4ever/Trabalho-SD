@@ -19,9 +19,9 @@ O projeto consiste em um sistema distribuído de transações bancárias no esti
    - `PixService` (gRPC na porta `50053`): Processamento transacional de transferências e histórico.
    - Comunicação backend baseada em gRPC com Protocol Buffers binários.
 4. **Banco de Dados Real (Sem Mocks):**
-   - Conectado a PostgreSQL operacional (via `docker-compose.yml`) com tabelas reais `contas` e `transacoes`.
+   - Conectado a PostgreSQL operacional (Google Cloud SQL no GCP ou PostgreSQL local) com tabelas reais `contas` e `transacoes`.
    - Todas as consultas, alterações de saldo e transferências refletem de fato no banco (zero mocks ou listas na memória).
-   - Suporte a fallback automático em SQLite (`database/banco_sd.db`) caso o container não esteja em execução.
+   - Suporte a fallback automático em SQLite (`database/banco_sd.db`) caso o PostgreSQL não esteja em execução.
 5. **Validação no Backend:** Validação obrigatória de dados de negócio no Gateway com retorno explícito de `400 Bad Request` para erros e `201 Created` para transferências realizadas.
 6. **Segurança (Autenticação JWT):** Middleware de segurança no API Gateway exigindo `Authorization: Bearer <token>`. Bloqueio imediato na borda com `401 Unauthorized` se token inválido ou ausente.
 7. **Tradução e Delegação de Protocolo:** Recebe JSON, desserializa, autentica, valida e serializa em chamadas gRPC/Protobuf binárias para os microsserviços internos.
@@ -184,6 +184,86 @@ python3 -m venv --clear .venv
 
 > **Para ver os logs na `vm1`:** `tmux attach -t sd_gateway`  
 > *(Para sair sem fechar: `Ctrl + B`, depois `D`)*
+
+---
+
+## Como Executar Localmente (Desenvolvimento)
+
+Caso prefira executar todo o ecossistema na sua máquina local sem depender de instâncias na nuvem, você pode optar pela execução rápida via script automatizado ou pelo modo passo a passo em 3 terminais separados.
+
+> [!TIP]
+> **Banco de Dados Local:** O sistema utiliza automaticamente o banco SQLite relacional persistente em `database/banco_sd.db` com as contas de teste (`alice`, `bob`, `admin`) e histórico de transações pré-carregados. Não é necessário instalar ou rodar nenhum container ou serviço de banco externo. Caso você possua um PostgreSQL local rodando na porta `5432`, o sistema conectará a ele automaticamente se desejar.
+
+### Pré-requisitos
+- Python 3.10+ (ou compatível com seu ambiente)
+- Git e `pip`
+- (Opcional) `tmux` para gerenciar os serviços em segundo plano
+
+---
+
+### Opção 1: Execução Rápida via Script (Recomendado)
+
+O projeto inclui o script [`scripts/run_local.sh`](scripts/run_local.sh) que configura o ambiente virtual, instala as dependências, compila os arquivos do Protocol Buffers e inicia os 3 serviços automaticamente:
+
+```bash
+git clone https://github.com/ge4ever/Trabalho-SD.git
+cd Trabalho-SD
+./scripts/run_local.sh
+```
+
+**Comandos úteis:**
+- **Acompanhar os logs em tempo real (via tmux):**
+  ```bash
+  tmux attach -t sd_local
+  ```
+  *(Dica: use `Ctrl + B`, depois `0` para o AccountService, `1` para o PixService e `2` para o API Gateway. Para sair sem encerrar os serviços: `Ctrl + B`, depois `D`)*.
+- **Encerrar todos os serviços locais:**
+  ```bash
+  ./scripts/run_local.sh stop
+  ```
+
+---
+
+### Opção 2: Execução Passo a Passo (3 Terminais)
+
+Se preferir rodar e acompanhar cada microsserviço individualmente em janelas de terminal abertas:
+
+#### 1. Preparar o Ambiente e Dependências (Terminal 1)
+```bash
+git clone https://github.com/ge4ever/Trabalho-SD.git
+cd Trabalho-SD
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### 2. Compilar os Protocol Buffers (gRPC)
+*(Os arquivos já vêm pré-compilados em `grpc-generated/`, mas você pode recompilar a qualquer momento)*:
+```bash
+python -m grpc_tools.protoc -I proto --python_out=grpc-generated --grpc_python_out=grpc-generated proto/pix.proto
+```
+
+#### 3. Iniciar o AccountService (Terminal 1 - Porta 50052)
+```bash
+source .venv/bin/activate
+LOCAL=1 python account-service/account_server.py
+```
+
+#### 4. Iniciar o PixService (Terminal 2 - Porta 50053)
+Abra um segundo terminal no diretório do projeto:
+```bash
+cd ~/Trabalho-SD
+source .venv/bin/activate
+LOCAL=1 python pix-service/pix_server.py
+```
+
+#### 5. Iniciar o API Gateway & Frontend (Terminal 3 - Porta 50051)
+Abra um terceiro terminal no diretório do projeto:
+```bash
+cd ~/Trabalho-SD
+source .venv/bin/activate
+LOCAL=1 python gateway/server.py
+```
 
 ---
 
