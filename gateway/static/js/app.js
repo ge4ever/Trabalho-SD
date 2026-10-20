@@ -630,18 +630,15 @@ function setupEventListeners() {
     });
   });
 
-  // Pílulas de Valores Rápidos
-  document.querySelectorAll(".chip-amount").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      const amountInput = document.getElementById("pix-valor");
-      if (amountInput) {
-        const added = parseFloat(chip.dataset.amount || 0);
-        const current = parseFloat(amountInput.value.replace(",", ".") || 0);
-        amountInput.value = (current + added).toFixed(2).replace(".", ",");
-        amountInput.focus();
+  // Previne que o scroll do mouse altere acidentalmente o valor no campo numérico
+  const pixValorInput = document.getElementById("pix-valor");
+  if (pixValorInput) {
+    pixValorInput.addEventListener("wheel", (e) => {
+      if (document.activeElement === pixValorInput && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        pixValorInput.blur();
       }
-    });
-  });
+    }, { passive: true });
+  }
 
   // Ações Rápidas
   document.getElementById("action-pix")?.addEventListener("click", () => {
