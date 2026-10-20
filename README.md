@@ -62,7 +62,7 @@ O projeto consiste em um sistema distribuído de transações bancárias no esti
         +----------------+     +----------------+
                  |                     |
                  +----------+----------+
-                            | PixService chama contas
+                            | 
                             v
                    +---------------+
                    |    BANCO      |
