@@ -199,7 +199,7 @@ python3 -m venv --clear .venv
 
 ---
 ### Como usar a interface web
-- **No GCP:** `http://<IP_EXTERNO_VM1>:50051/`
+- Para entender como usar a interface web e seus usuários basta ir para a seção **Como usar** logo abaixo do tutorial para executar localmente.
 
 ---
 
