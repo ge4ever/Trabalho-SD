@@ -186,6 +186,7 @@ Conecte via SSH na máquina **`vm1`**:
 ```bash
 git clone https://github.com/ge4ever/Trabalho-SD.git
 cd ~/Trabalho-SD
+sudo apt install python3-venv
 python3 -m venv --clear .venv
 ./scripts/run_vm1.sh
 ```
