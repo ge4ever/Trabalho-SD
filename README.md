@@ -1,4 +1,4 @@
-# Trabalho 1 - Sistema Distribuído de Contas e Transações Pix
+# Trabalho 2 - Sistema Distribuído de Contas e Transações Pix com exposição WEB e API Gateway
 
 #### Participantes
 - Geovana Ribeiro Araújo Espinosa - 202405104
