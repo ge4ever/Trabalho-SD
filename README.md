@@ -198,6 +198,10 @@ python3 -m venv --clear .venv
 > *(Para sair sem fechar: `Ctrl + B`, depois `D`)*
 
 ---
+### Como usar a interface web
+- **No GCP:** `http://<IP_EXTERNO_VM1>:50051/`
+
+---
 
 ## Como Executar Localmente (Desenvolvimento)
 
