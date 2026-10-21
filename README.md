@@ -89,8 +89,8 @@ O projeto consiste em um sistema distribuído de transações bancárias no esti
 
 A aplicação está configurada para operar de forma distribuída em **3 Máquinas Virtuais (Compute Engine)** integradas ao banco gerenciado **Google Cloud SQL (PostgreSQL)**, permitindo demonstrar com clareza o papel e os logs em tempo real de cada microsserviço:
 
-> [!IMPORTANT]
-> Ao criar as três VMs no Compute Engine (Ubuntu 22.04+ ou Debian 11+), crie todas na **mesma Região** (ex: `us-central1`) e na **mesma rede VPC** (`default`). Isso garante que a comunicação gRPC entre elas ocorra via **IP interno privado**, com altíssima velocidade, sem custos de tráfego e com segurança.
+> [!IMPORTANTE]
+> Ao criar as três VMs no Compute Engine (Ubuntu 22.04+ ou Debian 11+), crie todas na **mesma Região** (ex: `us-central1`) e na **mesma rede VPC** (`default`). Isso garante que a comunicação gRPC entre elas ocorra via **IP interno privado**, com altíssima velocidade, sem custos de tráfego e com segurança. Lembre também de configurar o Firewall das VMs para permitir tráfego HTTP e HTTPS
 
 ### Topologia de Nós (3 VMs + Cloud SQL)
 
