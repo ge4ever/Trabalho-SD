@@ -15,8 +15,8 @@ O projeto consiste em um sistema distribuído de transações bancárias no esti
 1. **Frontend:** Interface visual funcional (Mobile-First / Desktop) consumindo **exclusivamente o API Gateway** via REST HTTP/JSON (nunca gRPC direto no cliente).
 2. **API Gateway (REST / HTTP):** Ponto único de entrada implementado em Flask (porta `50051`), com validação de payload, autenticação JWT e tradução REST -> gRPC.
 3. **Backend com 2 Microsserviços internos gRPC:**
-   - `AccountService` (gRPC na porta `50052`): Gestão de contas, saldo, autenticação e débitos/créditos.
-   - `PixService` (gRPC na porta `50053`): Processamento transacional de transferências e histórico.
+   - `AccountService` (gRPC na porta `50052`): Autenticar usuários, consultar contas e executar créditos e débitos.
+   - `PixService` (gRPC na porta `50053`): Processamento transacional de transferências, histórico e verificação da existência de contas.
    - Comunicação backend baseada em gRPC com Protocol Buffers binários.
 4. **Banco de Dados Real (Sem Mocks):**
    - Conectado a PostgreSQL operacional (Google Cloud SQL no GCP ou PostgreSQL local) com tabelas reais `contas` e `transacoes`.
