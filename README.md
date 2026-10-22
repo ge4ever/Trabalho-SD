@@ -299,6 +299,7 @@ Com os serviços iniciados, acesse pelo navegador de qualquer dispositivo:
   - *Usuário Comum:* Acesso restrito à própria conta (`alice@pix.local` ou `bob@pix.local` com senha `123456`).
   - *Administrador Geral:* Permissão de supervisão para auditar e alternar entre todas as contas (`admin@pix.local` com senha `admin123`).
 - **Transferência Real Pix:** O envio debita o remetente, credita o destinatário no PostgreSQL e retorna status **201 Created**.
+- **Transferência com Erro** Existe a possibilidade de o usuário tentar debitar um saldo em sua própria conta, ou tentar realizar uma transação de um valor maior que a quantidade que ele possui em saldo. Em ambos os casos o sistema identifica esses erros e retorna um **400 Bad Request**.
 - **Histórico Persistido:** Exibe as transações reais gravadas na tabela `transacoes` do banco de dados relacional.
 - **Logout Seguro:** Encerramento de sessão no canto superior direito para alternar de usuário.
 
